@@ -1,7 +1,7 @@
 ******************************************************************************
              TMS320C2000 Linker PC v22.6.2                     
 ******************************************************************************
->> Linked Wed Oct 22 11:22:45 2025
+>> Linked Wed Oct 22 13:57:52 2025
 
 OUTPUT FILE NAME:   <freertos_demo_280049.out>
 ENTRY POINT SYMBOL: "code_start"  address: 00000000
@@ -56,7 +56,7 @@ PAGE 0:
 PAGE 1:
   BOOT_RSVD             00000002   000000f1  00000000  000000f1  RWIX
   RAMM1                 00000400   000003f8  00000200  000001f8  RWIX
-  RAMLS5                0000a800   00000800  00000522  000002de  RWIX
+  RAMLS5                0000a800   00000800  000003fe  00000402  RWIX
   RAMLS6                0000b000   00000800  00000000  00000800  RWIX
   RAMLS7                0000b800   00000800  00000000  00000800  RWIX
   RAMGS0                0000c000   00002000  00000000  00002000  RWIX
@@ -76,7 +76,7 @@ codestart
 
 .TI.ramfunc 
 *          0    000000f6    00000004     
-                  000000f6    00000004     driverlib_eabi.lib : sysctl.obj (.TI.ramfunc)
+                  000000f6    00000004     sysctl.obj (.TI.ramfunc)
 
 .cinit     0    00009942    00000028     
                   00009942    0000000d     (.cinit..data.load) [load image, compression = lzss]
@@ -95,84 +95,86 @@ codestart
 .stack     1    00000400    00000200     UNINITIALIZED
                   00000400    00000200     --HOLE--
 
-.bss       1    0000ab40    000001bc     UNINITIALIZED
-                  0000ab40    000000f8     c2000_freertos.obj (.bss)
-                  0000ac38    000000a0     tasks.obj (.bss:pxReadyTasksLists)
-                  0000acd8    00000022     tasks.obj (.bss)
-                  0000acfa    00000002     tasks.obj (.bss:xIdleTaskHandles)
+.bss       1    0000aa1c    000001bc     UNINITIALIZED
+                  0000aa1c    00000022     tasks.obj (.bss)
+                  0000aa3e    00000002     tasks.obj (.bss:xIdleTaskHandles)
+                  0000aa40    000000f8     c2000_freertos.obj (.bss)
+                  0000ab38    000000a0     tasks.obj (.bss:pxReadyTasksLists)
 
 .init_array 
 *          0    000000f6    00000000     UNINITIALIZED
 
-.const     1    0000a800    0000033f     
-                  0000a800    0000009a     driverlib_eabi.lib : sysctl.obj (.const:.string)
-                  0000a89a    00000098                        : gpio.obj (.const:.string)
-                  0000a932    00000080     board.obj (.const:.string)
-                  0000a9b2    00000053     device.obj (.const:.string)
-                  0000aa05    00000001     tasks.obj (.const)
-                  0000aa06    00000051     driverlib_eabi.lib : interrupt.obj (.const:.string)
-                  0000aa57    00000001     --HOLE-- [fill = 0]
-                  0000aa58    00000050                        : cputimer.obj (.const:.string)
-                  0000aaa8    00000042     port.obj (.const:.string)
-                  0000aaea    0000003e     main.obj (.const:.string)
-                  0000ab28    00000011     c2000_freertos.obj (.const:.string)
-                  0000ab39    00000001     --HOLE-- [fill = 0]
-                  0000ab3a    00000005     tasks.obj (.const:.string)
+.const     1    0000a800    0000021b     
+                  0000a800    00000080     board.obj (.const:.string)
+                  0000a880    00000053     device.obj (.const:.string)
+                  0000a8d3    00000001     tasks.obj (.const)
+                  0000a8d4    00000042     port.obj (.const:.string)
+                  0000a916    0000003e     main.obj (.const:.string)
+                  0000a954    00000037     gpio.obj (.const:.string)
+                  0000a98b    00000001     --HOLE-- [fill = 0]
+                  0000a98c    00000037     sysctl.obj (.const:.string)
+                  0000a9c3    00000001     --HOLE-- [fill = 0]
+                  0000a9c4    00000020     interrupt.obj (.const:.string)
+                  0000a9e4    0000001f     cputimer.obj (.const:.string)
+                  0000aa03    00000001     --HOLE-- [fill = 0]
+                  0000aa04    00000011     c2000_freertos.obj (.const:.string)
+                  0000aa15    00000001     --HOLE-- [fill = 0]
+                  0000aa16    00000005     tasks.obj (.const:.string)
 
-.data      1    0000acfc    00000027     UNINITIALIZED
-                  0000acfc    00000004     main.obj (.data)
-                  0000ad00    0000000e     tasks.obj (.data)
-                  0000ad0e    00000006     c2000_freertos.obj (.data)
-                  0000ad14    00000006     rts2800_fpu32_eabi.lib : exit.c.obj (.data)
-                  0000ad1a    00000004     port.obj (.data)
-                  0000ad1e    00000002     rts2800_fpu32_eabi.lib : _lock.c.obj (.data:_lock)
-                  0000ad20    00000002                            : _lock.c.obj (.data:_unlock)
-                  0000ad22    00000001     tasks.obj (.data:xYieldPendings)
+.data      1    0000abd8    00000027     UNINITIALIZED
+                  0000abd8    0000000e     tasks.obj (.data)
+                  0000abe6    00000006     c2000_freertos.obj (.data)
+                  0000abec    00000006     rts2800_fpu32_eabi.lib : exit.c.obj (.data)
+                  0000abf2    00000004     main.obj (.data)
+                  0000abf6    00000004     port.obj (.data)
+                  0000abfa    00000002     rts2800_fpu32_eabi.lib : _lock.c.obj (.data:_lock)
+                  0000abfc    00000002                            : _lock.c.obj (.data:_unlock)
+                  0000abfe    00000001     tasks.obj (.data:xYieldPendings)
 
 .text.1    0    00008000    00000800     
                   00008000    00000101     tasks.obj (.text:xTaskIncrementTick)
                   00008101    000000f6     tasks.obj (.text:xTaskResumeAll)
                   000081f7    000000e0     device.obj (.text:Device_enableAllPeripherals)
                   000082d7    000000d0     tasks.obj (.text:xTaskRemoveFromEventList)
-                  000083a7    000000c8     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_setClock)
+                  000083a7    000000c8     sysctl.obj (.text:SysCtl_setClock)
                   0000846f    000000c6     queue.obj (.text:xQueueSemaphoreTake)
-                  00008535    000000bd     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_isPLLValid)
+                  00008535    000000bd     sysctl.obj (.text:SysCtl_isPLLValid)
                   000085f2    000000b4     port.obj (.text:pxPortInitialiseStack)
                   000086a6    000000ae     tasks.obj (.text:xTaskPriorityInherit)
                   00008754    000000a2     tasks.obj (.text:vTaskPriorityDisinheritAfterTimeout)
-                  000087f6    0000000a     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_illegalOperationHandler)
+                  000087f6    0000000a     interrupt.obj (.text:Interrupt_illegalOperationHandler)
 
 .text.2    0    00008800    00000800     
                   00008800    00000087     portasm.obj (.text)
                   00008887    00000087     tasks.obj (.text:prvAddNewTaskToReadyList)
                   0000890e    00000083     queue.obj (.text:xQueueGenericReset)
-                  00008991    0000007f     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_clearIFR)
-                  00008a10    00000073                        : sysctl.obj (.text:DCC_setCounterSeeds)
+                  00008991    0000007f     interrupt.obj (.text:Interrupt_clearIFR)
+                  00008a10    00000073     sysctl.obj (.text:DCC_setCounterSeeds)
                   00008a83    0000006f     tasks.obj (.text:prvInitialiseNewTask)
                   00008af2    00000068     tasks.obj (.text:prvCreateIdleTasks)
-                  00008b5a    0000005e     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_getClock)
-                  00008bb8    00000052                        : gpio.obj (.text:GPIO_setPadConfig)
+                  00008b5a    0000005e     sysctl.obj (.text:SysCtl_getClock)
+                  00008bb8    00000052     gpio.obj (.text:GPIO_setPadConfig)
                   00008c0a    00000051     device.obj (.text:Device_init)
                   00008c5b    00000050     queue.obj (.text:prvUnlockQueue)
-                  00008cab    0000004e     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_disable)
-                  00008cf9    0000004d                        : sysctl.obj (.text:SysCtl_selectOscSource)
+                  00008cab    0000004e     interrupt.obj (.text:Interrupt_disable)
+                  00008cf9    0000004d     sysctl.obj (.text:SysCtl_selectOscSource)
                   00008d46    00000048     queue.obj (.text:xQueueGiveFromISR)
-                  00008d8e    00000045     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_pollX1Counter)
+                  00008d8e    00000045     sysctl.obj (.text:SysCtl_pollX1Counter)
                   00008dd3    00000044     main.obj (.text:timer1_ISR)
-                  00008e17    00000040     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_selectXTAL)
+                  00008e17    00000040     sysctl.obj (.text:SysCtl_selectXTAL)
                   00008e57    0000003e     tasks.obj (.text:vTaskSwitchContext)
-                  00008e95    0000003d     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_initModule)
-                  00008ed2    0000003a                        : gpio.obj (.text:GPIO_setAnalogMode)
-                  00008f0c    00000037                        : gpio.obj (.text:GPIO_setControllerCore)
-                  00008f43    00000037                        : gpio.obj (.text:GPIO_setPinConfig)
-                  00008f7a    00000037                        : gpio.obj (.text:GPIO_setQualificationMode)
-                  00008fb1    00000037                        : interrupt.obj (.text:Interrupt_enable)
+                  00008e95    0000003d     interrupt.obj (.text:Interrupt_initModule)
+                  00008ed2    0000003a     gpio.obj (.text:GPIO_setAnalogMode)
+                  00008f0c    00000037     gpio.obj (.text:GPIO_setControllerCore)
+                  00008f43    00000037     gpio.obj (.text:GPIO_setPinConfig)
+                  00008f7a    00000037     gpio.obj (.text:GPIO_setQualificationMode)
+                  00008fb1    00000037     interrupt.obj (.text:Interrupt_enable)
                   00008fe8    00000018     list.obj (.text:vListInitialise)
 
 .text.3    0    00009000    00000800     
                   00009000    00000035     tasks.obj (.text:prvAddCurrentTaskToDelayedList)
                   00009035    00000034     list.obj (.text:vListInsert)
-                  00009069    00000031     driverlib_eabi.lib : gpio.obj (.text:GPIO_setDirectionMode)
+                  00009069    00000031     gpio.obj (.text:GPIO_setDirectionMode)
                   0000909a    00000030     port.obj (.text:vPortSetupTimerInterrupt)
                   000090ca    0000002e     rts2800_fpu32_eabi.lib : copy_decompress_lzss.c.obj (.text:decompress:lzss)
                   000090f8    0000002d     tasks.obj (.text:xTaskCheckForTimeOut)
@@ -183,20 +185,20 @@ codestart
                   000091cd    00000027     board.obj (.text:GPIO_writePin)
                   000091f4    00000027     main.obj (.text:GPIO_writePin)
                   0000921b    00000026     list.obj (.text:uxListRemove)
-                  00009241    00000025     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_selectXTALSingleEnded)
+                  00009241    00000025     sysctl.obj (.text:SysCtl_selectXTALSingleEnded)
                   00009266    00000025     board.obj (.text:timer1_init)
                   0000928b    00000025     queue.obj (.text:xQueueGenericCreateStatic)
-                  000092b0    00000024     driverlib_eabi.lib : sysctl.obj (.text:DCC_enableSingleShotMode)
+                  000092b0    00000024     sysctl.obj (.text:DCC_enableSingleShotMode)
                   000092d4    00000020     tasks.obj (.text:vTaskDelay)
                   000092f4    0000001f     tasks.obj (.text:xTaskCreateStatic)
-                  00009313    0000001e     driverlib_eabi.lib : sysctl.obj (.text:DCC_setCounter1ClkSource)
-                  00009331    0000001e                        : interrupt.obj (.text:Interrupt_initVectorTable)
+                  00009313    0000001e     sysctl.obj (.text:DCC_setCounter1ClkSource)
+                  00009331    0000001e     interrupt.obj (.text:Interrupt_initVectorTable)
                   0000934f    0000001e     queue.obj (.text:prvInitialiseNewQueue)
                   0000936d    0000001d     rts2800_fpu32_eabi.lib : memcpy.c.obj (.text)
-                  0000938a    0000001c     driverlib_eabi.lib : sysctl.obj (.text:DCC_setCounter0ClkSource)
+                  0000938a    0000001c     sysctl.obj (.text:DCC_setCounter0ClkSource)
                   000093a6    0000001a     board.obj (.text:CPUTimer_startTimer)
                   000093c0    0000001a     port.obj (.text:CPUTimer_startTimer)
-                  000093da    0000001a     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_getLowSpeedClock)
+                  000093da    0000001a     sysctl.obj (.text:SysCtl_getLowSpeedClock)
                   000093f4    0000001a     c2000_freertos.obj (.text:blueTask_init)
                   0000940e    0000001a     c2000_freertos.obj (.text:redTask_init)
                   00009428    00000019     board.obj (.text:INTERRUPT_init)
@@ -204,42 +206,42 @@ codestart
                   0000945a    00000019     board.obj (.text:myLED2_GPIO_init)
                   00009473    00000018     tasks.obj (.text:vTaskStartScheduler)
                   0000948b    00000017     board.obj (.text:CPUTimer_isBaseValid)
-                  000094a2    00000017     driverlib_eabi.lib : cputimer.obj (.text:CPUTimer_isBaseValid)
+                  000094a2    00000017     cputimer.obj (.text:CPUTimer_isBaseValid)
                   000094b9    00000017     port.obj (.text:CPUTimer_isBaseValid)
                   000094d0    00000017     board.obj (.text:CPUTimer_setPreScaler)
                   000094e7    00000017     port.obj (.text:CPUTimer_setPreScaler)
                   000094fe    00000017     device.obj (.text:SysCtl_enablePeripheral)
-                  00009515    00000017     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_enablePeripheral)
+                  00009515    00000017     sysctl.obj (.text:SysCtl_enablePeripheral)
                   0000952c    00000017     tasks.obj (.text:prvResetNextTaskUnblockTime)
                   00009543    00000017     rts2800_fpu32_eabi.lib : boot28.asm.obj (.text)
-                  0000955a    00000016     driverlib_eabi.lib : sysctl.obj (.text:DCC_disableDoneSignal)
-                  00009570    00000016                        : sysctl.obj (.text:DCC_enableDoneSignal)
-                  00009586    00000016                        : interrupt.obj (.text:Interrupt_defaultHandler)
+                  0000955a    00000016     sysctl.obj (.text:DCC_disableDoneSignal)
+                  00009570    00000016     sysctl.obj (.text:DCC_enableDoneSignal)
+                  00009586    00000016     interrupt.obj (.text:Interrupt_defaultHandler)
                   0000959c    00000015     board.obj (.text:CPUTimer_enableInterrupt)
                   000095b1    00000015     port.obj (.text:CPUTimer_enableInterrupt)
-                  000095c6    00000015     driverlib_eabi.lib : sysctl.obj (.text:DCC_clearDoneFlag)
-                  000095db    00000015                        : sysctl.obj (.text:DCC_clearErrorFlag)
-                  000095f0    00000015                        : sysctl.obj (.text:DCC_disableErrorSignal)
-                  00009605    00000015                        : sysctl.obj (.text:DCC_enableErrorSignal)
+                  000095c6    00000015     sysctl.obj (.text:DCC_clearDoneFlag)
+                  000095db    00000015     sysctl.obj (.text:DCC_clearErrorFlag)
+                  000095f0    00000015     sysctl.obj (.text:DCC_disableErrorSignal)
+                  00009605    00000015     sysctl.obj (.text:DCC_enableErrorSignal)
                   0000961a    00000015     device.obj (.text:GPIO_unlockPortConfig)
                   0000962f    00000015     main.obj (.text:ledToggle)
                   00009644    00000014     board.obj (.text:CPUTimer_reloadTimerCounter)
                   00009658    00000014     port.obj (.text:CPUTimer_reloadTimerCounter)
                   0000966c    00000014     board.obj (.text:CPUTimer_stopTimer)
                   00009680    00000014     port.obj (.text:CPUTimer_stopTimer)
-                  00009694    00000014     driverlib_eabi.lib : sysctl.obj (.text:DCC_disableModule)
-                  000096a8    00000014                        : sysctl.obj (.text:DCC_enableModule)
+                  00009694    00000014     sysctl.obj (.text:DCC_disableModule)
+                  000096a8    00000014     sysctl.obj (.text:DCC_enableModule)
                   000096bc    00000014     board.obj (.text:GPIO_isPinValid)
-                  000096d0    00000014     driverlib_eabi.lib : gpio.obj (.text:GPIO_isPinValid)
+                  000096d0    00000014     gpio.obj (.text:GPIO_isPinValid)
                   000096e4    00000014     main.obj (.text:GPIO_isPinValid)
                   000096f8    00000014     device.obj (.text:SysCtl_deviceCal)
-                  0000970c    00000013     driverlib_eabi.lib : cputimer.obj (.text:CPUTimer_setEmulationMode)
+                  0000970c    00000013     cputimer.obj (.text:CPUTimer_setEmulationMode)
                   0000971f    00000013     main.obj (.text:main)
                   00009732    00000013     queue.obj (.text:prvGetHighestPriorityOfWaitToReceiveList)
                   00009745    00000012     queue.obj (.text:prvIsQueueEmpty)
                   00009757    00000011     board.obj (.text:CPUTimer_setPeriod)
                   00009768    00000011     port.obj (.text:CPUTimer_setPeriod)
-                  00009779    00000010     driverlib_eabi.lib : sysctl.obj (.text:DCC_isBaseValid)
+                  00009779    00000010     sysctl.obj (.text:DCC_isBaseValid)
                   00009789    00000010     device.obj (.text:Device_initGPIO)
                   00009799    00000010     c2000_freertos.obj (.text:vApplicationGetIdleTaskMemory)
                   000097a9    00000010     tasks.obj (.text:vTaskPlaceOnEventList)
@@ -247,7 +249,7 @@ codestart
                   000097c9    0000000f     device.obj (.text:ASysCtl_disableDCDC)
                   000097d8    0000000f     board.obj (.text:Interrupt_register)
                   000097e7    0000000f     port.obj (.text:Interrupt_register)
-                  000097f6    0000000a     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_nmiHandler)
+                  000097f6    0000000a     interrupt.obj (.text:Interrupt_nmiHandler)
 
 .text.4    0    00009800    00000141     
                   00009800    0000000f     main.obj (.text:LED_TaskRed)
@@ -255,8 +257,8 @@ codestart
                   0000981e    0000000f     main.obj (.text:blueLedToggle)
                   0000982d    0000000f     main.obj (.text:redLedToggle)
                   0000983c    0000000e     tasks.obj (.text:pvTaskIncrementMutexHeldCount)
-                  0000984a    0000000d     driverlib_eabi.lib : interrupt.obj (.text:Interrupt_disableGlobal)
-                  00009857    0000000d                        : interrupt.obj (.text:Interrupt_enableGlobal)
+                  0000984a    0000000d     interrupt.obj (.text:Interrupt_disableGlobal)
+                  00009857    0000000d     interrupt.obj (.text:Interrupt_enableGlobal)
                   00009864    0000000d     device.obj (.text:SysCtl_setLowSpeedClock)
                   00009871    0000000d     port.obj (.text:vPortSetupSWInterrupt)
                   0000987e    0000000c     rts2800_fpu32_eabi.lib : args_main.c.obj (.text)
@@ -264,7 +266,7 @@ codestart
                   00009896    0000000b     board.obj (.text:Board_init)
                   000098a1    0000000b     board.obj (.text:PinMux_init)
                   000098ac    0000000b     device.obj (.text:SysCtl_disableWatchdog)
-                  000098b7    0000000b     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_isMCDClockFailureDetected)
+                  000098b7    0000000b     sysctl.obj (.text:SysCtl_isMCDClockFailureDetected)
                   000098c2    0000000a     port.obj (.text:vPortExitCritical)
                   000098cc    00000009     c2000_freertos.obj (.text:FreeRTOS_init)
                   000098d5    00000009     main.obj (.text:LED_TaskBlue)
@@ -273,7 +275,7 @@ codestart
                   000098f0    00000008     rts2800_fpu32_eabi.lib : copy_decompress_none.c.obj (.text:decompress:none)
                   000098f8    00000008     f28004x_codestartbranch.obj (.text)
                   00009900    00000008     port.obj (.text:vPortEnterCritical)
-                  00009908    00000007     driverlib_eabi.lib : sysctl.obj (.text:SysCtl_resetMCD)
+                  00009908    00000007     sysctl.obj (.text:SysCtl_resetMCD)
                   0000990f    00000007     device.obj (.text:__error__)
                   00009916    00000007     rts2800_fpu32_eabi.lib : memset.c.obj (.text)
                   0000991d    00000006                            : copy_zero_init.c.obj (.text:decompress:ZI)
@@ -307,19 +309,19 @@ MODULE SUMMARY
     +--+-----------------------------+------+---------+---------+
        Total:                        441    83        0      
                                                              
+    .\device\driverlib\
+       sysctl.obj                    1194   55        0      
+       interrupt.obj                 419    32        0      
+       gpio.obj                      374    55        0      
+       cputimer.obj                  42     31        0      
+    +--+-----------------------------+------+---------+---------+
+       Total:                        2029   173       0      
+                                                             
     .\syscfg\
        c2000_freertos.obj            92     17        1022   
        board.obj                     366    128       0      
     +--+-----------------------------+------+---------+---------+
        Total:                        458    145       1022   
-                                                             
-    C:\ti\C2000Ware_6_00_00_00\driverlib\f28004x\driverlib\ccs\Debug\driverlib_eabi.lib
-       sysctl.obj                    1194   154       0      
-       gpio.obj                      374    152       0      
-       interrupt.obj                 419    81        0      
-       cputimer.obj                  42     80        0      
-    +--+-----------------------------+------+---------+---------+
-       Total:                        2029   467       0      
                                                              
     C:\ti\ccs2020\ccs\tools\compiler\ti-cgt-c2000_22.6.2.LTS\lib\rts2800_fpu32_eabi.lib
        exit.c.obj                    41     0         6      
@@ -340,14 +342,14 @@ MODULE SUMMARY
        Stack:                        0      0         512    
        Linker Generated:             0      39        0      
     +--+-----------------------------+------+---------+---------+
-       Grand Total:                  6471   868       1763   
+       Grand Total:                  6471   574       1763   
 
 
 LINKER GENERATED COPY TABLES
 
 __TI_cinit_table @ 0000995e records: 3, size/record: 4, table size: 12
-	.data: load addr=00009942, load size=0000000d bytes, run addr=0000acfc, run size=00000027 bytes, compression=lzss
-	.bss: load addr=00009956, load size=00000004 bytes, run addr=0000ab40, run size=000001bc bytes, compression=zero_init
+	.data: load addr=00009942, load size=0000000d bytes, run addr=0000abd8, run size=00000027 bytes, compression=lzss
+	.bss: load addr=00009956, load size=00000004 bytes, run addr=0000aa1c, run size=000001bc bytes, compression=zero_init
 	.freertosStaticStack: load addr=0000995a, load size=00000004 bytes, run addr=000000fa, run size=00000300 bytes, compression=zero_init
 
 
@@ -371,26 +373,26 @@ address     data page           name
 
 00000400      10 (00000400)     __stack
 
-0000ab40     2ad (0000ab40)     binarySem1Buffer
+0000aa40     2a9 (0000aa40)     binarySem1Buffer
 
-0000ab80     2ae (0000ab80)     idleTaskTCBBuffer
+0000aa80     2aa (0000aa80)     idleTaskTCBBuffer
 
-0000abc0     2af (0000abc0)     redTaskTCBBuffer
+0000aac0     2ab (0000aac0)     redTaskTCBBuffer
 
-0000ac00     2b0 (0000ac00)     blueTaskTCBBuffer
+0000ab00     2ac (0000ab00)     blueTaskTCBBuffer
 
-0000ad06     2b4 (0000ad00)     pxCurrentTCB
-0000ad0e     2b4 (0000ad00)     redTaskHandle
-0000ad10     2b4 (0000ad00)     blueTaskHandle
-0000ad12     2b4 (0000ad00)     binarySem1Handle
-0000ad14     2b4 (0000ad00)     __TI_enable_exit_profile_output
-0000ad16     2b4 (0000ad00)     __TI_cleanup_ptr
-0000ad18     2b4 (0000ad00)     __TI_dtors_ptr
-0000ad1a     2b4 (0000ad00)     bYield
-0000ad1b     2b4 (0000ad00)     bPreemptive
-0000ad1c     2b4 (0000ad00)     ulCriticalNesting
-0000ad1e     2b4 (0000ad00)     _lock
-0000ad20     2b4 (0000ad00)     _unlock
+0000abde     2af (0000abc0)     pxCurrentTCB
+0000abe6     2af (0000abc0)     redTaskHandle
+0000abe8     2af (0000abc0)     blueTaskHandle
+0000abea     2af (0000abc0)     binarySem1Handle
+0000abec     2af (0000abc0)     __TI_enable_exit_profile_output
+0000abee     2af (0000abc0)     __TI_cleanup_ptr
+0000abf0     2af (0000abc0)     __TI_dtors_ptr
+0000abf6     2af (0000abc0)     bYield
+0000abf7     2af (0000abc0)     bPreemptive
+0000abf8     2af (0000abc0)     ulCriticalNesting
+0000abfa     2af (0000abc0)     _lock
+0000abfc     2af (0000abc0)     _unlock
 
 
 GLOBAL SYMBOLS: SORTED ALPHABETICALLY BY Name 
@@ -439,11 +441,11 @@ page  address   name
 1     00000600  __TI_STACK_END                     
 abs   00000200  __TI_STACK_SIZE                    
 0     00009151  __TI_auto_init_nobinit_nopinit     
-1     0000ad16  __TI_cleanup_ptr                   
+1     0000abee  __TI_cleanup_ptr                   
 0     000090ca  __TI_decompress_lzss               
 0     000098f0  __TI_decompress_none               
-1     0000ad18  __TI_dtors_ptr                     
-1     0000ad14  __TI_enable_exit_profile_output    
+1     0000abf0  __TI_dtors_ptr                     
+1     0000abec  __TI_enable_exit_profile_output    
 abs   ffffffff  __TI_pprof_out_hndl                
 abs   ffffffff  __TI_prof_data_size                
 abs   ffffffff  __TI_prof_data_start               
@@ -453,28 +455,28 @@ n/a   UNDEFED   __c_args__
 1     00000400  __stack                            
 0     0000987e  _args_main                         
 0     00009543  _c_int00                           
-1     0000ad1e  _lock                              
+1     0000abfa  _lock                              
 0     000098e6  _nop                               
 0     000098e2  _register_lock                     
 0     000098de  _register_unlock                   
 0     00009940  _system_post_cinit                 
 0     0000993d  _system_pre_init                   
-1     0000ad20  _unlock                            
+1     0000abfc  _unlock                            
 0     0000917c  abort                              
-1     0000ad1b  bPreemptive                        
-1     0000ad1a  bYield                             
-1     0000ab40  binarySem1Buffer                   
-1     0000ad12  binarySem1Handle                   
+1     0000abf7  bPreemptive                        
+1     0000abf6  bYield                             
+1     0000aa40  binarySem1Buffer                   
+1     0000abea  binarySem1Handle                   
 0     0000980f  binarySem1_init                    
-1     0000ad10  blueTaskHandle                     
+1     0000abe8  blueTaskHandle                     
 0     000002fa  blueTaskStackBuffer                
-1     0000ac00  blueTaskTCBBuffer                  
+1     0000ab00  blueTaskTCBBuffer                  
 0     000093f4  blueTask_init                      
 0     00000000  code_start                         
 0     0000917e  exit                               
 0     00008800  getSTF                             
 0     000000fa  idleTaskStack                      
-1     0000ab80  idleTaskTCBBuffer                  
+1     0000aa80  idleTaskTCBBuffer                  
 0     0000971f  main                               
 0     0000936d  memcpy                             
 0     00009916  memset                             
@@ -483,15 +485,15 @@ n/a   UNDEFED   __c_args__
 0     00008804  portRESTORE_FIRST_CONTEXT          
 0     0000880f  portTICK_ISR                       
 0     0000983c  pvTaskIncrementMutexHeldCount      
-1     0000ad06  pxCurrentTCB                       
+1     0000abde  pxCurrentTCB                       
 0     000085f2  pxPortInitialiseStack              
-1     0000ad0e  redTaskHandle                      
+1     0000abe6  redTaskHandle                      
 0     000001fa  redTaskStackBuffer                 
-1     0000abc0  redTaskTCBBuffer                   
+1     0000aac0  redTaskTCBBuffer                   
 0     0000940e  redTask_init                       
 0     00008dd3  timer1_ISR                         
 0     00009266  timer1_init                        
-1     0000ad1c  ulCriticalNesting                  
+1     0000abf8  ulCriticalNesting                  
 0     0000921b  uxListRemove                       
 0     00009932  uxTaskGetNumberOfTasks             
 0     00009799  vApplicationGetIdleTaskMemory      
@@ -630,22 +632,22 @@ page  address   name
 0     0000996a  __TI_CINIT_Warm                    
 1     00000400  __stack                            
 1     00000600  __TI_STACK_END                     
-1     0000ab40  binarySem1Buffer                   
-1     0000ab80  idleTaskTCBBuffer                  
-1     0000abc0  redTaskTCBBuffer                   
-1     0000ac00  blueTaskTCBBuffer                  
-1     0000ad06  pxCurrentTCB                       
-1     0000ad0e  redTaskHandle                      
-1     0000ad10  blueTaskHandle                     
-1     0000ad12  binarySem1Handle                   
-1     0000ad14  __TI_enable_exit_profile_output    
-1     0000ad16  __TI_cleanup_ptr                   
-1     0000ad18  __TI_dtors_ptr                     
-1     0000ad1a  bYield                             
-1     0000ad1b  bPreemptive                        
-1     0000ad1c  ulCriticalNesting                  
-1     0000ad1e  _lock                              
-1     0000ad20  _unlock                            
+1     0000aa40  binarySem1Buffer                   
+1     0000aa80  idleTaskTCBBuffer                  
+1     0000aac0  redTaskTCBBuffer                   
+1     0000ab00  blueTaskTCBBuffer                  
+1     0000abde  pxCurrentTCB                       
+1     0000abe6  redTaskHandle                      
+1     0000abe8  blueTaskHandle                     
+1     0000abea  binarySem1Handle                   
+1     0000abec  __TI_enable_exit_profile_output    
+1     0000abee  __TI_cleanup_ptr                   
+1     0000abf0  __TI_dtors_ptr                     
+1     0000abf6  bYield                             
+1     0000abf7  bPreemptive                        
+1     0000abf8  ulCriticalNesting                  
+1     0000abfa  _lock                              
+1     0000abfc  _unlock                            
 abs   00000200  __TI_STACK_SIZE                    
 abs   ffffffff  __TI_pprof_out_hndl                
 abs   ffffffff  __TI_prof_data_size                
