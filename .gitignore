@@ -1,6 +1,9 @@
 c_cpp_properties.json
 .vscode/
 build/
+CPU1_RAM/
+CPU1_FLASH/
+
 
 # Prerequisites
 *.d
