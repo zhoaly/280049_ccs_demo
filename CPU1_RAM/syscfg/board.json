@@ -1,0 +1,12 @@
+{
+    "interruptInfo" : [
+        {
+            "interruptName": "INT_timer2",
+            "interruptHandler": "portTICK_ISR"
+        },
+        {
+            "interruptName": "INT_timer1",
+            "interruptHandler": "timer1_ISR"
+        }
+    ]
+}

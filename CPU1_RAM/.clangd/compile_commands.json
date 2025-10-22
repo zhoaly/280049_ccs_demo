@@ -1,0 +1,32 @@
+[
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I -xc",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg/board.c"
+   },
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I -xc",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg/c2000_freertos.c"
+   },
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I -xc",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg/c2000ware_libraries.c"
+   },
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I -xc",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device/device.c"
+   },
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device/f28004x_codestartbranch.asm"
+   },
+   {
+      "directory" : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM",
+      "command"   : "clang++ -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049\" -I\"C:/ti/C2000Ware_6_00_00_00\" -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/device\" -I\"C:/ti/C2000Ware_6_00_00_00/driverlib/f28004x/driverlib\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/portable/CCS/C2000_C28x\" -I\"C:/ti/C2000Ware_6_00_00_00/kernel/FreeRTOS/Source/include\" -I\"C:/ti/ccs2020/ccs/tools/compiler/ti-cgt-c2000_22.6.2.LTS/include\" -DDEBUG -DRAM -I\"C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CPU1_RAM/syscfg\" -DF28004x=1 -I -xc",
+      "file"      : "C:/Users/13281/workspace_ccstheia/freertos_demo_280049/main.c"
+   }
+]
