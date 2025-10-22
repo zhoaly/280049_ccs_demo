@@ -30,6 +30,12 @@ led2.gpio.writeInitialValue = true;
 led2.gpio.initialValue      = 1;
 led2.gpio.gpioPin.$assign   = "GPIO6";
 
+const divider1       = system.clockTree["CLBCLKDIV"];
+divider1.divideValue = 4;
+
+const divider2       = system.clockTree["LOSPCP"];
+divider2.divideValue = 1;
+
 cputimer1.$name                     = "timer1";
 cputimer1.cputimerBase              = "CPUTIMER1_BASE";
 cputimer1.enableInterrupt           = true;
