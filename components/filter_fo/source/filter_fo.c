@@ -51,7 +51,7 @@
 
 //*****************************************************************************
 //
-// FILTER_FO_getDenCoeffs
+// FILTER_FO_getDenCoeffs 获取分母系数
 //
 //*****************************************************************************
 void
@@ -62,11 +62,11 @@ FILTER_FO_getDenCoeffs(FILTER_FO_Handle handle, float32_t *pa1)
     *pa1 = obj->a1;
 
     return;
-} // end of FILTER_FO_getDenCoeffs() function
+} // FILTER_FO_getDenCoeffs() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_getInitialConditions
+// FILTER_FO_getInitialConditions 获取初始条件
 //
 //*****************************************************************************
 void
@@ -80,11 +80,11 @@ FILTER_FO_getInitialConditions(FILTER_FO_Handle handle, float32_t *px1,
     *py1 = obj->y1;
 
     return;
-} // end of FILTER_FO_getInitialConditions() function
+} // FILTER_FO_getInitialConditions() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_getNumCoeffs
+// FILTER_FO_getNumCoeffs 获取分子系数
 //
 //*****************************************************************************
 void
@@ -96,11 +96,11 @@ FILTER_FO_getNumCoeffs(FILTER_FO_Handle handle, float32_t *pb0, float32_t *pb1)
     *pb1 = obj->b1;
 
     return;
-} // end of FILTER_FO_getNumCoeffs() function
+} // FILTER_FO_getNumCoeffs() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_init
+// FILTER_FO_init 初始化对象
 //
 //*****************************************************************************
 FILTER_FO_Handle FILTER_FO_init(void *pMemory,
@@ -114,16 +114,16 @@ FILTER_FO_Handle FILTER_FO_init(void *pMemory,
     }
 
     //
-    // Assign the handle
+    // 赋值句柄
     //
     handle = (FILTER_FO_Handle)pMemory;
 
     return(handle);
-} // end of FILTER_FO_init() function
+} // FILTER_FO_init() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_setDenCoeffs
+// FILTER_FO_setDenCoeffs 设置分母系数
 //
 //*****************************************************************************
 void
@@ -134,11 +134,11 @@ FILTER_FO_setDenCoeffs(FILTER_FO_Handle handle, const float32_t a1)
     obj->a1 = a1;
 
     return;
-} // end of FILTER_FO_setDenCoeffs() function
+} // FILTER_FO_setDenCoeffs() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_setInitialConditions
+// FILTER_FO_setInitialConditions 设置初始条件
 //
 //*****************************************************************************
 void
@@ -152,11 +152,11 @@ FILTER_FO_setInitialConditions(FILTER_FO_Handle handle, const float32_t x1,
     obj->y1 = y1;
 
     return;
-} // end of FILTER_FO_setInitialConditions() function
+} // FILTER_FO_setInitialConditions() 函数结束
 
 //*****************************************************************************
 //
-// FILTER_FO_setNumCoeffs
+// FILTER_FO_setNumCoeffs 设置分子系数
 //
 //*****************************************************************************
 void
@@ -169,6 +169,6 @@ FILTER_FO_setNumCoeffs(FILTER_FO_Handle handle, const float32_t b0,
     obj->b1 = b1;
 
     return;
-} // end of FILTER_FO_setNumCoeffs() function
+} // FILTER_FO_setNumCoeffs() 函数结束
 
-// end of file
+// 文件结束

@@ -42,7 +42,7 @@
 
 //*****************************************************************************
 //
-// PID_getDerFilterParams
+// PID_getDerFilterParams 获取微分滤波器参数
 //
 //*****************************************************************************
 void
@@ -58,11 +58,11 @@ PID_getDerFilterParams(PID_Handle handle, float32_t *b0, float32_t *b1,
     *y1 = FILTER_FO_get_y1(obj->derFilterHandle);
 
     return;
-} // end of PID_getDerFilterParams() function
+} // PID_getDerFilterParams() 函数结束
 
 //*****************************************************************************
 //
-// PID_init
+// PID_init 初始化 PID 对象
 //
 //*****************************************************************************
 PID_Handle
@@ -72,7 +72,7 @@ PID_init(void *pMemory, const size_t numBytes)
     PID_Obj    *obj;
 
     //
-    // Check to ensure memory allotted can accommodate object memory needs
+    // 检查分配的内存是否满足对象所需大小
     //
     if(numBytes < sizeof(PID_Obj))
     {
@@ -80,27 +80,27 @@ PID_init(void *pMemory, const size_t numBytes)
     }
 
     //
-    // Assign the handle
+    // 赋值句柄
     //
     handle = (PID_Handle)pMemory;
 
     //
-    // Assign a pointer
+    // 获取对象指针
     //
     obj = (PID_Obj *)handle;
 
     //
-    // Initialize the derivative filter object
+    // 初始化微分滤波器对象
     //
     obj->derFilterHandle = FILTER_FO_init(&(obj->derFilter),
                                           sizeof(obj->derFilter));
 
     return(handle);
-} // end of PID_init() function
+} // PID_init() 函数结束
 
 //*****************************************************************************
 //
-// PID_setDerFilterParams
+// PID_setDerFilterParams 设置微分滤波器参数
 //
 //*****************************************************************************
 void
@@ -114,6 +114,6 @@ PID_setDerFilterParams(PID_Handle handle, const float32_t b0, const float32_t b1
     FILTER_FO_setInitialConditions(obj->derFilterHandle,x1,y1);
 
     return;
-} // end of PID_setDerFilterParams() function
+} // PID_setDerFilterParams() 函数结束
 
-// end of file
+// 文件结束
