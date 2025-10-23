@@ -33,8 +33,8 @@
 
 
 //! \file   libraries/drvic/drv8316/include/drv8316s.h
-//! \brief  Contains public interface to various functions related
-//!         to the DRV8316 object
+//! \brief  包含与 DRV8316 对象相关的各种函数的公共接口
+//!         针对 DRV8316 对象
 //!
 
 #ifndef DRV8316S_H
@@ -43,8 +43,7 @@
 
 //*****************************************************************************
 //
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
+// 若使用 C++ 编译器构建，请确保此头文件中的所有定义均采用 C 语言链接。
 //
 //*****************************************************************************
 #ifdef __cplusplus
@@ -59,42 +58,42 @@ extern "C"
 //
 //*****************************************************************************
 
-// the includes
+// 引用的头文件
 #include <math.h>
 
-// drivers
+// 驱动
 #include "spi.h"
 #include "gpio.h"
 
 // **************************************************************************
-// modules
+// 模块
 
 // **************************************************************************
-// solutions
+// 解决方案
 
 // **************************************************************************
-// the defines
+// 宏定义
 
-//! \brief Defines the address mask
+//! \brief 定义地址掩码
 //!
 #define DRV8316_ADDR_MASK                   (0x7E00)
 
-//! \brief Defines the data mask
+//! \brief 定义数据掩码
 //!
 #define DRV8316_DATA_MASK                   (0x00FF)
 
-//! \brief Defines the R/W mask
+//! \brief 定义读写掩码
 //!
 #define DRV8316_RW_MASK                     (0x8000)
 
 //
-// STATUS00
+// 状态寄存器 00
 //
-//! \brief Defines the R/W mask
+//! \brief 定义读写掩码
 //!
 #define DRV8316_FAULT_TYPE_MASK             (0x00FF)
 
-//! \brief Defines the register address
+//! \brief 定义寄存器地址
 //!
 #define statReg00_addr      0x00
 #define statReg01_addr      0x01
@@ -109,7 +108,7 @@ extern "C"
 #define ctrlReg10_addr      0x0C
 
 //
-// STATUS00
+// 状态寄存器 00
 //
 #define DRV8316_STAT00_FAULT_BITS           (1 << 0)
 #define DRV8316_STAT00_OT_BITS              (1 << 1)
@@ -121,7 +120,7 @@ extern "C"
 #define DRV8316_STAT00_RESERVED_BITS        (1 << 7)
 
 //
-// STATUS01
+// 状态寄存器 01
 //
 #define DRV8316_STAT01_OCP_LA_BITS          (1 << 0)
 #define DRV8316_STAT01_OCP_HA_BITS          (1 << 1)
@@ -133,7 +132,7 @@ extern "C"
 #define DRV8316_STAT01_OTW_BITS             (1 << 7)
 
 //
-// STATUS02
+// 状态寄存器 02
 //
 #define DRV8316_STAT02_SPI_ADDR_FLT_BITS    (1 << 0)
 #define DRV8316_STAT02_SPI_SCLK_FLT_BITS    (1 << 1)
@@ -145,7 +144,7 @@ extern "C"
 #define DRV8316_STAT02_RESERVED_BITS        (1 << 7)
 
 //
-// CTRL03
+// 控制寄存器 03
 //
 #define DRV8316_CTRL03_REG_LOCK_BITS        (7 << 0)
 #define DRV8316_CTRL03_RESERVED1_BITS       (1 << 3)
@@ -155,7 +154,7 @@ extern "C"
 #define DRV8316_CTRL03_RESERVED5_BITS       (1 << 7)
 
 //
-// CTRL04
+// 控制寄存器 04
 //
 #define DRV8316_CTRL04_CLR_FLT_BITS         (1 << 0)
 #define DRV8316_CTRL04_PWM_MODE_BITS        (3 << 1)
@@ -165,7 +164,7 @@ extern "C"
 #define DRV8316_CTRL04_RESERVED3_BITS       (1 << 7)
 
 //
-// CTRL05
+// 控制寄存器 05
 //
 #define DRV8316_CTRL05_OTW_REP_BITS         (1 << 0)
 #define DRV8316_CTRL05_SPI_FLT_REP_BITS     (1 << 1)
@@ -177,7 +176,7 @@ extern "C"
 #define DRV8316_CTRL05_RESERVED4_BITS       (1 << 7)
 
 //
-// CTRL06
+// 控制寄存器 06
 //
 #define DRV8316_CTRL06_OCP_MODE_BITS        (3 << 0)
 #define DRV8316_CTRL06_OCP_LVL_BITS         (1 << 2)
@@ -187,7 +186,7 @@ extern "C"
 #define DRV8316_CTRL06_RESERVED_BITS        (1 << 7)
 
 //
-// CTRL07
+// 控制寄存器 07
 //
 #define DRV8316_CTRL07_CSA_GAIN_BITS        (3 << 0)
 #define DRV8316_CTRL07_EN_ASR_BITS          (1 << 2)
@@ -198,7 +197,7 @@ extern "C"
 #define DRV8316_CTRL07_BEMF_TH_BITS         (1 << 7)
 
 //
-// CTRL08
+// 控制寄存器 08
 //
 #define DRV8316_CTRL08_BUCK_DIS_BITS        (1 << 0)
 #define DRV8316_CTRL08_BUCK_SEL_BITS        (3 << 1)
@@ -209,244 +208,244 @@ extern "C"
 #define DRV8316_CTRL08_RESERVED2_BITS       (1 << 7)
 
 // **************************************************************************
-// the typedefs
+// 类型定义
 
 //------------------------------------------------------------------------------
-//! \brief Enumeration for the R/W modes
+//! \brief 枚举读写模式
 //!
 typedef enum
 {
-    DRV8316_CTRLMODE_WRITE    = (0 << 15),  //!< Write Mode
-    DRV8316_CTRLMODE_READ     = (1 << 15)   //!< Read Mode
+    DRV8316_CTRLMODE_WRITE    = (0 << 15),  //!< 写模式
+    DRV8316_CTRLMODE_READ     = (1 << 15)   //!< 读模式
 } DRV8316_CtrlMode_e;
 
-//! \brief Enumeration for the register addresses
+//! \brief 枚举寄存器地址
 //!
 typedef enum
 {
-    DRV8316_ADDRESS_STATUS_0   = (0x0 << 9),  //!< Status Register 0
-    DRV8316_ADDRESS_STATUS_1   = (0x1 << 9),  //!< Status Register 1
-    DRV8316_ADDRESS_STATUS_2   = (0x2 << 9),  //!< Status Register 2
-    DRV8316_ADDRESS_CONTROL_1  = (0x3 << 9),  //!< Control Register 1
-    DRV8316_ADDRESS_CONTROL_2  = (0x4 << 9),  //!< Control Register 2
-    DRV8316_ADDRESS_CONTROL_3  = (0x5 << 9),  //!< Control Register 3
-    DRV8316_ADDRESS_CONTROL_4  = (0x6 << 9),  //!< Control Register 4
-    DRV8316_ADDRESS_CONTROL_5  = (0x7 << 9),  //!< Control Register 5
-    DRV8316_ADDRESS_CONTROL_6  = (0x8 << 9),  //!< Control Register 6
-    DRV8316_ADDRESS_CONTROL_10 = (0xC << 9)   //!< Control Register 10
+    DRV8316_ADDRESS_STATUS_0   = (0x0 << 9),  //!< 状态寄存器 0
+    DRV8316_ADDRESS_STATUS_1   = (0x1 << 9),  //!< 状态寄存器 1
+    DRV8316_ADDRESS_STATUS_2   = (0x2 << 9),  //!< 状态寄存器 2
+    DRV8316_ADDRESS_CONTROL_1  = (0x3 << 9),  //!< 控制寄存器 1
+    DRV8316_ADDRESS_CONTROL_2  = (0x4 << 9),  //!< 控制寄存器 2
+    DRV8316_ADDRESS_CONTROL_3  = (0x5 << 9),  //!< 控制寄存器 3
+    DRV8316_ADDRESS_CONTROL_4  = (0x6 << 9),  //!< 控制寄存器 4
+    DRV8316_ADDRESS_CONTROL_5  = (0x7 << 9),  //!< 控制寄存器 5
+    DRV8316_ADDRESS_CONTROL_6  = (0x8 << 9),  //!< 控制寄存器 6
+    DRV8316_ADDRESS_CONTROL_10 = (0xC << 9)   //!< 控制寄存器 10
 } DRV8316_Address_e;
 
-//! \brief Enumeration for the Status 0 register, faults
+//! \brief 枚举状态寄存器 0 的故障位
 //!
 typedef enum
 {
-    DRV8316_FAULT       = (1 << 0),    //!< Device Fault
-    DRV8316_OT          = (1 << 1),    //!< Overtemperature Fault
-    DRV8316_OVP         = (1 << 2),    //!< Supply Overvoltage Protection
-    DRV8316_NPOR        = (1 << 3),    //!< Supply Power On Reset
-    DRV8316_OCP         = (1 << 4),    //!< Over Current Protection
-    DRV8316_SPI_FLT     = (1 << 5),    //!< SPI Fault
-    DRV8316_BK_FLT      = (1 << 6)     //!< Buck Fault
+    DRV8316_FAULT       = (1 << 0),    //!< 器件故障
+    DRV8316_OT          = (1 << 1),    //!< 过温故障
+    DRV8316_OVP         = (1 << 2),    //!< 电源过压保护
+    DRV8316_NPOR        = (1 << 3),    //!< 上电复位
+    DRV8316_OCP         = (1 << 4),    //!< 过流保护
+    DRV8316_SPI_FLT     = (1 << 5),    //!< SPI 故障
+    DRV8316_BK_FLT      = (1 << 6)     //!< Buck 故障
 } DRV8316_STATUS00_e;
 
-//! \brief Enumeration for the Status 1 register, faults
+//! \brief 枚举状态寄存器 1 的故障位
 //!
 typedef enum
 {
-    DRV8316_OCP_LA      = (1 << 0),    //!< Overcurrent Status on Low-side switch of OUTA
-    DRV8316_OCP_HA      = (1 << 1),    //!< Overcurrent Status on High-side switch of OUTA
-    DRV8316_OCP_LB      = (1 << 2),    //!< Overcurrent Status on Low-side switch of OUTB
-    DRV8316_OCP_HB      = (1 << 3),    //!< Overcurrent Status on High-side switch of OUTB
-    DRV8316_OCL_LC      = (1 << 4),    //!< Overcurrent Status on Low-side switch of OUTC
-    DRV8316_OCP_HC      = (1 << 5),    //!< Overcurrent Status on High-side switch of OUTC
-    DRV8316_OTS         = (1 << 6),    //!< Overtemperature Shutdown Status
-    DRV8316_OTW         = (1 << 7)     //!< Overtemperature Warning Status
+    DRV8316_OCP_LA      = (1 << 0),    //!< OUTA 低边开关过流状态
+    DRV8316_OCP_HA      = (1 << 1),    //!< OUTA 高边开关过流状态
+    DRV8316_OCP_LB      = (1 << 2),    //!< OUTB 低边开关过流状态
+    DRV8316_OCP_HB      = (1 << 3),    //!< OUTB 高边开关过流状态
+    DRV8316_OCL_LC      = (1 << 4),    //!< OUTC 低边开关过流状态
+    DRV8316_OCP_HC      = (1 << 5),    //!< OUTC 高边开关过流状态
+    DRV8316_OTS         = (1 << 6),    //!< 过温关断状态
+    DRV8316_OTW         = (1 << 7)     //!< 过温警告状态
 } DRV8316_STATUS01_e;
 
-//! \brief Enumeration for the Status 1 register, faults
+//! \brief 枚举状态寄存器 1 的故障位
 //!
 typedef enum
 {
-    DRV8316_SPI_ADDR_FLT  = (1 << 0),    //!< SPI Address Error
-    DRV8316_SPI_SCLK_FLT  = (1 << 1),    //!< SPI Clock Framing Error
-    DRV8316_SPI_PARITY    = (1 << 2),    //!< SPI Parity Error
-    DRV8316_VCP_UV        = (1 << 3),    //!< Charge Pump Undervoltage Status
-    DRV8316_BUCK_UV       = (1 << 4),    //!< Buck Regulator Undervoltage Staus
-    DRV8316_BUCK_OCP      = (1 << 5),    //!< Buck Regulator Overcurrent Staus
-    DRV8316_OTP_ERR       = (1 << 6),    //!< One Time Programmabilty Error
-    DRV8316_RESERVED      = (1 << 7)     //!< Reserved
+    DRV8316_SPI_ADDR_FLT  = (1 << 0),    //!< SPI 地址错误
+    DRV8316_SPI_SCLK_FLT  = (1 << 1),    //!< SPI 时钟帧错误
+    DRV8316_SPI_PARITY    = (1 << 2),    //!< SPI 奇偶校验错误
+    DRV8316_VCP_UV        = (1 << 3),    //!< 充电泵欠压状态
+    DRV8316_BUCK_UV       = (1 << 4),    //!< Buck 稳压器欠压状态
+    DRV8316_BUCK_OCP      = (1 << 5),    //!< Buck 稳压器过流状态
+    DRV8316_OTP_ERR       = (1 << 6),    //!< 一次性可编程错误
+    DRV8316_RESERVED      = (1 << 7)     //!< 保留
 } DRV8316_STATUS02_e;
 
-//! \brief Enumeration for the high side gate drive peak source current;
-//! gate currents not consistent with DS
+//! \brief 枚举高边栅极驱动峰值源电流；
+//! 栅极电流与数据手册不一致
 //!
 typedef enum
 {
-    DRV8316_REG_LOCK_0 = 0,  //!< No effect unless locked or unlocked
-    DRV8316_REG_LOCK_1 = 1,  //!< No effect unless locked or unlocked
-    DRV8316_REG_LOCK_2 = 2,  //!< No effect unless locked or unlocked
-    DRV8316_REG_LOCK_3 = 3,  //!< Write 011b to this register to unlock all registers
-    DRV8316_REG_LOCK_4 = 4,  //!< No effect unless locked or unlocked
-    DRV8316_REG_LOCK_5 = 5,  //!< No effect unless locked or unlocked
-    DRV8316_REG_LOCK_6 = 6,  //!< Write 110b to lock the settings by ignoring further register
-    DRV8316_REG_LOCK_7 = 7   //!< No effect unless locked or unlocked
+    DRV8316_REG_LOCK_0 = 0,  //!< 除解锁/锁定外无效果
+    DRV8316_REG_LOCK_1 = 1,  //!< 除解锁/锁定外无效果
+    DRV8316_REG_LOCK_2 = 2,  //!< 除解锁/锁定外无效果
+    DRV8316_REG_LOCK_3 = 3,  //!< 写入 011b 以解锁全部寄存器
+    DRV8316_REG_LOCK_4 = 4,  //!< 除解锁/锁定外无效果
+    DRV8316_REG_LOCK_5 = 5,  //!< 除解锁/锁定外无效果
+    DRV8316_REG_LOCK_6 = 6,  //!< 写入 110b 以忽略后续寄存器访问并锁定设置
+    DRV8316_REG_LOCK_7 = 7   //!< 除解锁/锁定外无效果
 } DRV8316_CTRL01_RegLock_e;
 
-//! \brief Enumeration for the driver PWM mode
+//! \brief 枚举驱动器 PWM 模式
 //!
 typedef enum
 {
-    DRV8316_PWMMODE_6_N  = 0,     //!< PWM_MODE = 6 inputs
-    DRV8316_PWMMODE_6_LC = 1,     //!< PWM_MODE = 6 inputs with current limit
-    DRV8316_PWMMODE_3_N  = 2,     //!< PWM_MODE = 3 inputs
-    DRV8316_PWMMODE_3_LC = 3,     //!< PWM_MODE = 3 inputs with current limit
+    DRV8316_PWMMODE_6_N  = 0,     //!< PWM_MODE = 6 路输入
+    DRV8316_PWMMODE_6_LC = 1,     //!< PWM_MODE = 6 路输入并启用限流
+    DRV8316_PWMMODE_3_N  = 2,     //!< PWM_MODE = 3 路输入
+    DRV8316_PWMMODE_3_LC = 3,     //!< PWM_MODE = 3 路输入并启用限流
 } DRV8316_CTRL02_PWMMode_e;
 
-//! \brief Enumeration for the slew rate
+//! \brief 枚举转换斜率
 //!
 typedef enum
 {
-    DRV8316_SLEW_25V  = 0,      //!< Slew rate is 25  V/uS
-    DRV8316_SLEW_50V  = 1,      //!< Slew rate is 50  V/uS
-    DRV8316_SLEW_150V = 2,      //!< Slew rate is 150 V/uS
-    DRV8316_SLEW_200V = 3       //!< Slew rate is 200 V/uS
+    DRV8316_SLEW_25V  = 0,      //!< 上升沿速率为 25 V/μs
+    DRV8316_SLEW_50V  = 1,      //!< 上升沿速率为 50 V/μs
+    DRV8316_SLEW_150V = 2,      //!< 上升沿速率为 150 V/μs
+    DRV8316_SLEW_200V = 3       //!< 上升沿速率为 200 V/μs
 } DRV8316_CTRL02_SlewRate_e;
 
-//! \brief Enumeration for the SDO Mode Setting
+//! \brief 枚举 SDO 模式配置
 //!
 typedef enum
 {
-    DRV8316_SDOMODE_OPEN_DRAIN  = 0,     //!< SDO IO in Open Drain Mode
-    DRV8316_SDOMODE_PUSH_PULL   = 1      //!< SDO IO in Push Pull Mode
+    DRV8316_SDOMODE_OPEN_DRAIN  = 0,     //!< SDO 引脚为开漏模式
+    DRV8316_SDOMODE_PUSH_PULL   = 1      //!< SDO 引脚为推挽模式
 } DRV8316_CTRL02_SDOMode_e;
 
 
-//! \brief Enumeration for the Overvoltage Level Setting
+//! \brief 枚举过压阈值设置
 //!
 typedef enum
 {
-    DRV8316_OVPSEL_32V  = 0,        //!< VM overvoltage level is 32-V
-    DRV8316_OVPSEL_20V   = 1        //!< VM overvoltage level is 20-V
+    DRV8316_OVPSEL_32V  = 0,        //!< VM 过压阈值为 32 V
+    DRV8316_OVPSEL_20V   = 1        //!< VM 过压阈值为 20 V
 } DRV8316_CTRL03_OVPSEL_e;
 
 
-//! \brief Enumeration for the Freqency of PWM at 100% Duty Cycle
+//! \brief 枚举 100% 占空比时的 PWM 频率
 //!
 typedef enum
 {
-    DRV8316_PWM_100_DUTY_SEL_20KHz  = 0,     //!< 20KHz
-    DRV8316_PWM_100_DUTY_SEL_40KHz   = 1      //!< 40KHz
+    DRV8316_PWM_100_DUTY_SEL_20KHz  = 0,     //!< 20 kHz
+    DRV8316_PWM_100_DUTY_SEL_40KHz   = 1      //!< 40 kHz
 } DRV8316_CTRL03_DUTYSEL_e;
 
 
-//! \brief Enumeration for the OCP Fault Options
+//! \brief 枚举过流保护故障处理选项
 //!
 typedef enum
 {
-    DRV8316_OCP_MODE_LATCH   = 0,   //!< Overcurrent causes a latched fault
-    DRV8316_OCP_MODE_RETRY   = 1,   //!< Overcurrent causes an automatic retrying fault
-    DRV8316_OCP_MODE_REPORT  = 2,   //!< Overcurrent is report only but no action is taken
-    DRV8316_OCP_MODE_NO      = 3    //!< Overcurrent is not reported and no action is taken
+    DRV8316_OCP_MODE_LATCH   = 0,   //!< 过流将导致锁存故障
+    DRV8316_OCP_MODE_RETRY   = 1,   //!< 过流将自动重试
+    DRV8316_OCP_MODE_REPORT  = 2,   //!< 仅报告过流，不执行动作
+    DRV8316_OCP_MODE_NO      = 3    //!< 不报告过流且不执行动作
 } DRV8316_CTRL04_OCPMODE_e;
 
-//! \brief Enumeration for the Overcurrent Level Setting
+//! \brief 枚举过流阈值设置
 //!
 typedef enum
 {
-    DRV8316_OCP_LVL_16A  = 0,     //!< 16A
-    DRV8316_OCP_LVL_24A  = 1      //!< 24A
+    DRV8316_OCP_LVL_16A  = 0,     //!< 16 A
+    DRV8316_OCP_LVL_24A  = 1      //!< 24 A
 } DRV8316_CTRL04_OCPLVL_e;
 
-//! \brief Enumeration for the OCP Retry Time Settings
+//! \brief 枚举过流保护重试时间
 //!
 typedef enum
 {
-    DRV8316_OCP_RETRY_5ms   = 0,     //!< OCP retry time is 5 ms
-    DRV8316_OCP_RETRY_500ms = 1      //!< OCP retry time is 500 ms
+    DRV8316_OCP_RETRY_5ms   = 0,     //!< OCP 重试时间为 5 ms
+    DRV8316_OCP_RETRY_500ms = 1      //!< OCP 重试时间为 500 ms
 } DRV8316_CTRL04_OCPRETRY_e;
 
-//! \brief Enumeration for the OCP Deglitch Time Settings
+//! \brief 枚举过流保护去抖时间
 //!
 typedef enum
 {
-    DRV8316_OCP_DEG_0p2us  = 0,   //!< OCP deglitch time is 0.2 μs
-    DRV8316_OCP_DEG_0p6us  = 1,   //!< OCP deglitch time is 0.6 μs
-    DRV8316_OCP_DEG_1p1us  = 2,   //!< OCP deglitch time is 1.1 μs
-    DRV8316_OCP_DEG_1p6us  = 3    //!< OCP deglitch time is 1.6 μs
+    DRV8316_OCP_DEG_0p2us  = 0,   //!< OCP 去抖时间为 0.2 μs
+    DRV8316_OCP_DEG_0p6us  = 1,   //!< OCP 去抖时间为 0.6 μs
+    DRV8316_OCP_DEG_1p1us  = 2,   //!< OCP 去抖时间为 1.1 μs
+    DRV8316_OCP_DEG_1p6us  = 3    //!< OCP 去抖时间为 1.6 μs
 } DRV8316_CTRL04_OCPDEGE_e;
 
-//! \brief Enumeration for the Current Sense Amplifier's Gain Settings
+//! \brief 枚举电流采样放大器增益设置
 //!
 typedef enum
 {
-    DRV8316_CSA_GAIN_0p15VpA   = 0,   //!< CSA gain is 0.15 V/A
-    DRV8316_CSA_GAIN_0p30VpA   = 1,   //!< CSA gain is 0.30 V/A
-    DRV8316_CSA_GAIN_0p60VpA   = 2,   //!< CSA gain is 0.60 V/A
-    DRV8316_CSA_GAIN_1p20VpA   = 3,   //!< CSA gain is 1.20 V/A
+    DRV8316_CSA_GAIN_0p15VpA   = 0,   //!< CSA 增益为 0.15 V/A
+    DRV8316_CSA_GAIN_0p30VpA   = 1,   //!< CSA 增益为 0.30 V/A
+    DRV8316_CSA_GAIN_0p60VpA   = 2,   //!< CSA 增益为 0.60 V/A
+    DRV8316_CSA_GAIN_1p20VpA   = 3,   //!< CSA 增益为 1.20 V/A
 } DRV8316_CTRL05_CSAGain_e;
 
-//! \brief Enumeration for the Current Limit Recirculation Settings
+//! \brief 枚举电流限制回流配置
 //!
 typedef enum
 {
-    DRV8316_ILIM_RECIR_Brake   = 0,     //!< Current recirculation through FETs (Brake Mode)
-    DRV8316_ILIM_RECIR_Coast   = 1      //!< Current recirculation through diodes (Coast Mode)
+    DRV8316_ILIM_RECIR_Brake   = 0,     //!< 电流通过 FET 回流（制动模式）
+    DRV8316_ILIM_RECIR_Coast   = 1      //!< 电流通过二极管回流（滑行模式）
 } DRV8316_CTRL05_ILIMRECIR_e;
 
 
-//! \brief Enumeration for the Buck Voltage Selection
+//! \brief 枚举 Buck 电压选择
 //!
 typedef enum
 {
-    DRV8316_BUCK_SEL_3p3V  = 0,   //!< Buck voltage is 3.3 V
-    DRV8316_BUCK_SEL_5p0V  = 1,   //!< Buck voltage is 5.0 V
-    DRV8316_BUCK_SEL_4p0V  = 2,   //!< Buck voltage is 4.0 V
-    DRV8316_BUCK_SEL_5p7V  = 3,   //!< Buck voltage is 5.7 V
+    DRV8316_BUCK_SEL_3p3V  = 0,   //!< Buck 输出电压为 3.3 V
+    DRV8316_BUCK_SEL_5p0V  = 1,   //!< Buck 输出电压为 5.0 V
+    DRV8316_BUCK_SEL_4p0V  = 2,   //!< Buck 输出电压为 4.0 V
+    DRV8316_BUCK_SEL_5p7V  = 3,   //!< Buck 输出电压为 5.7 V
 } DRV8316_CTRL06_BUCKSEL_e;
 
-//! \brief Enumeration for the Current Limit Recirculation Settings
+//! \brief 枚举电流限制回流配置
 //!
 typedef enum
 {
-    DRV8316_BUCK_CL_600mA   = 0,     //!< Buck regulator current limit is set to 600 mA
-    DRV8316_BUCK_CL_150mA   = 1      //!< Buck regulator current limit is set to 150 mA
+    DRV8316_BUCK_CL_600mA   = 0,     //!< Buck 稳压器电流限值为 600 mA
+    DRV8316_BUCK_CL_150mA   = 1      //!< Buck 稳压器电流限值为 150 mA
 } DRV8316_CTRL06_BUCKCL_e;
 
 
-//! \brief Enumeration for the Delay Target for Driver Delay Compensation
+//! \brief 枚举驱动延时补偿目标
 //!
 typedef enum
 {
-    DRV8316_DLY_TARGET_0p0us  = 0x0,   //!< Delay is 0 us
-    DRV8316_DLY_TARGET_0p4us  = 0x1,   //!< Delay is 0.4 us
-    DRV8316_DLY_TARGET_0p6us  = 0x2,   //!< Delay is 0.6 us
-    DRV8316_DLY_TARGET_0p8us  = 0x3,   //!< Delay is 0.8 us
-    DRV8316_DLY_TARGET_1p0us  = 0x4,   //!< Delay is 1.0 us
-    DRV8316_DLY_TARGET_1p2us  = 0x5,   //!< Delay is 1.2 us
-    DRV8316_DLY_TARGET_1p4us  = 0x6,   //!< Delay is 1.4 us
-    DRV8316_DLY_TARGET_1p6us  = 0x7,   //!< Delay is 1.6 us
-    DRV8316_DLY_TARGET_1p8us  = 0x8,   //!< Delay is 1.8 us
-    DRV8316_DLY_TARGET_2p0us  = 0x9,   //!< Delay is 2.0 us
-    DRV8316_DLY_TARGET_2p2us  = 0xA,   //!< Delay is 2.2 us
-    DRV8316_DLY_TARGET_2p4us  = 0xB,   //!< Delay is 2.4 us
-    DRV8316_DLY_TARGET_2p6us  = 0xC,   //!< Delay is 2.6 us
-    DRV8316_DLY_TARGET_2p8us  = 0xD,   //!< Delay is 2.8 us
-    DRV8316_DLY_TARGET_3p0us  = 0xE,   //!< Delay is 3.0 us
-    DRV8316_DLY_TARGET_3p2us  = 0xF    //!< Delay is 3.2 us
+    DRV8316_DLY_TARGET_0p0us  = 0x0,   //!< 延时为 0 μs
+    DRV8316_DLY_TARGET_0p4us  = 0x1,   //!< 延时为 0.4 μs
+    DRV8316_DLY_TARGET_0p6us  = 0x2,   //!< 延时为 0.6 μs
+    DRV8316_DLY_TARGET_0p8us  = 0x3,   //!< 延时为 0.8 μs
+    DRV8316_DLY_TARGET_1p0us  = 0x4,   //!< 延时为 1.0 μs
+    DRV8316_DLY_TARGET_1p2us  = 0x5,   //!< 延时为 1.2 μs
+    DRV8316_DLY_TARGET_1p4us  = 0x6,   //!< 延时为 1.4 μs
+    DRV8316_DLY_TARGET_1p6us  = 0x7,   //!< 延时为 1.6 μs
+    DRV8316_DLY_TARGET_1p8us  = 0x8,   //!< 延时为 1.8 μs
+    DRV8316_DLY_TARGET_2p0us  = 0x9,   //!< 延时为 2.0 μs
+    DRV8316_DLY_TARGET_2p2us  = 0xA,   //!< 延时为 2.2 μs
+    DRV8316_DLY_TARGET_2p4us  = 0xB,   //!< 延时为 2.4 μs
+    DRV8316_DLY_TARGET_2p6us  = 0xC,   //!< 延时为 2.6 μs
+    DRV8316_DLY_TARGET_2p8us  = 0xD,   //!< 延时为 2.8 μs
+    DRV8316_DLY_TARGET_3p0us  = 0xE,   //!< 延时为 3.0 μs
+    DRV8316_DLY_TARGET_3p2us  = 0xF    //!< 延时为 3.2 μs
 } DRV8316_CTRL10_DLYTARGET_e;
 
 //------------------------------------------------------------------------------
-//! \brief Object for the DRV8316 STATUS00 register
+//! \brief DRV8316 STATUS00 寄存器对象
 //!
-struct DRV8316_STAT00_BITS {                    // bits description
-    bool                FAULT:1;            // Bits 0
-    bool                OT:1;               // Bits 1
-    bool                OVP:1;              // Bits 2
-    bool                NPOR:1;             // Bits 3
-    bool                OCP:1;              // Bits 4
-    bool                SPI_FLT:1;          // Bits 5
-    bool                BK_FLT:1;           // Bits 6
-    bool                rsvd1:1;            // Bits 7
+struct DRV8316_STAT00_BITS {                    // 位域说明
+    bool                FAULT:1;            // 位 0
+    bool                OT:1;               // 位 1
+    bool                OVP:1;              // 位 2
+    bool                NPOR:1;             // 位 3
+    bool                OCP:1;              // 位 4
+    bool                SPI_FLT:1;          // 位 5
+    bool                BK_FLT:1;           // 位 6
+    bool                rsvd1:1;            // 位 7
 };
 
 union DRV8316_STAT00_REG
@@ -455,17 +454,17 @@ union DRV8316_STAT00_REG
     struct   DRV8316_STAT00_BITS bit;
 };
 
-//! \brief Object for the DRV8316 STATUS01 register
+//! \brief DRV8316 STATUS01 寄存器对象
 //!
-struct DRV8316_STAT01_BITS {                    // bits description
-    bool                OCP_LA:1;           // Bits 0
-    bool                OCP_HA:1;           // Bits 1
-    bool                OCP_LB:1;           // Bits 2
-    bool                OCP_HB:1;           // Bits 3
-    bool                OCL_LC:1;           // Bits 4
-    bool                OCP_HC:1;           // Bits 5
-    bool                OTS:1;              // Bits 6
-    bool                OTW:1;              // Bits 7
+struct DRV8316_STAT01_BITS {                    // 位域说明
+    bool                OCP_LA:1;           // 位 0
+    bool                OCP_HA:1;           // 位 1
+    bool                OCP_LB:1;           // 位 2
+    bool                OCP_HB:1;           // 位 3
+    bool                OCL_LC:1;           // 位 4
+    bool                OCP_HC:1;           // 位 5
+    bool                OTS:1;              // 位 6
+    bool                OTW:1;              // 位 7
 };
 
 union DRV8316_STAT01_REG
@@ -474,17 +473,17 @@ union DRV8316_STAT01_REG
     struct   DRV8316_STAT01_BITS bit;
 };
 
-//! \brief Object for the DRV8316 STATUS02 register
+//! \brief DRV8316 STATUS02 寄存器对象
 //!
-struct DRV8316_STAT02_BITS {                    // bits description
-    bool                SPI_ADDR_FLT:1;     // Bits 0
-    bool                SPI_SCLK_FLT:1;     // Bits 1
-    bool                SPI_PARITY:1;       // Bits 2
-    bool                VCP_UV:1;           // Bits 3
-    bool                BUCK_UV:1;          // Bits 4
-    bool                BUCK_OCP:1;         // Bits 5
-    bool                OTP_ERR:1;          // Bits 6
-    uint16_t            rsvd2:5;            // Bits 7 Reserved
+struct DRV8316_STAT02_BITS {                    // 位域说明
+    bool                SPI_ADDR_FLT:1;     // 位 0
+    bool                SPI_SCLK_FLT:1;     // 位 1
+    bool                SPI_PARITY:1;       // 位 2
+    bool                VCP_UV:1;           // 位 3
+    bool                BUCK_UV:1;          // 位 4
+    bool                BUCK_OCP:1;         // 位 5
+    bool                OTP_ERR:1;          // 位 6
+    uint16_t            rsvd2:5;            // 位 7 保留
 };
 
 union DRV8316_STAT02_REG
@@ -493,11 +492,11 @@ union DRV8316_STAT02_REG
     struct   DRV8316_STAT02_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL01 register
+//! \brief DRV8316 CTRL01 寄存器对象
 //!
-struct DRV8316_CTRL01_BITS {                    // bits description
-    DRV8316_CTRL01_RegLock_e    REG_LOCK:3;       // Bits 2:0
-    uint16_t                    rsvd1:5;          // 7:3 Reserved
+struct DRV8316_CTRL01_BITS {                    // 位域说明
+    DRV8316_CTRL01_RegLock_e    REG_LOCK:3;       // 位 2:0
+    uint16_t                    rsvd1:5;          // 位 7:3 保留
 };
 
 union DRV8316_CTRL01_REG
@@ -506,14 +505,14 @@ union DRV8316_CTRL01_REG
     struct   DRV8316_CTRL01_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL03 register
+//! \brief DRV8316 CTRL03 寄存器对象
 //!
-struct DRV8316_CTRL02_BITS {                    // bits description
-    bool                      CLR_FLT:1;        // Bits 0
-    DRV8316_CTRL02_PWMMode_e  PWM_MODE:2;       // Bits 2-1
-    DRV8316_CTRL02_SlewRate_e SLEW:2;           // Bits 4-3
-    DRV8316_CTRL02_SDOMode_e  SDO_MODE:1;       // Bits 5
-    uint16_t                  rsvd1:2;          // 7:6 Reserved
+struct DRV8316_CTRL02_BITS {                    // 位域说明
+    bool                      CLR_FLT:1;        // 位 0
+    DRV8316_CTRL02_PWMMode_e  PWM_MODE:2;       // 位 2-1
+    DRV8316_CTRL02_SlewRate_e SLEW:2;           // 位 4-3
+    DRV8316_CTRL02_SDOMode_e  SDO_MODE:1;       // 位 5
+    uint16_t                  rsvd1:2;          // 位 7:6 保留
 };
 
 union DRV8316_CTRL02_REG
@@ -522,15 +521,15 @@ union DRV8316_CTRL02_REG
     struct   DRV8316_CTRL02_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL03 register
+//! \brief DRV8316 CTRL03 寄存器对象
 //!
-struct DRV8316_CTRL03_BITS {                    // bits description
-    bool                      OTW_REP:1;            // Bits 0
-    bool                      SPI_FLT_REP:1;        // Bits 1
-    bool                      OVP_EN:1;             // Bits 2
-    DRV8316_CTRL03_OVPSEL_e   OVP_SEL:1;            // Bits 3
-    DRV8316_CTRL03_DUTYSEL_e  PWM_100_DUTY_SEL:1;   // Bits 4
-    uint16_t                  rsvd1:3;              // 7:5 Reserved
+struct DRV8316_CTRL03_BITS {                    // 位域说明
+    bool                      OTW_REP:1;            // 位 0
+    bool                      SPI_FLT_REP:1;        // 位 1
+    bool                      OVP_EN:1;             // 位 2
+    DRV8316_CTRL03_OVPSEL_e   OVP_SEL:1;            // 位 3
+    DRV8316_CTRL03_DUTYSEL_e  PWM_100_DUTY_SEL:1;   // 位 4
+    uint16_t                  rsvd1:3;              // 位 7:5 保留
 };
 
 union DRV8316_CTRL03_REG
@@ -539,15 +538,15 @@ union DRV8316_CTRL03_REG
     struct   DRV8316_CTRL03_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL04 register
+//! \brief DRV8316 CTRL04 寄存器对象
 //!
-struct DRV8316_CTRL04_BITS {                    // bits description
-    DRV8316_CTRL04_OCPMODE_e   OCP_MODE:2;      // Bits 1-0
-    DRV8316_CTRL04_OCPLVL_e    OCP_LVL:1;       // Bits 2
-    DRV8316_CTRL04_OCPRETRY_e  OCP_RETRY:1;     // Bits 3
-    DRV8316_CTRL04_OCPDEGE_e   OCP_DEG:2;       // Bits 5-4
-    bool                       OCP_CBC:1;       // Bits 6
-    bool                       DRV_OFF:1;       // Bits 7
+struct DRV8316_CTRL04_BITS {                    // 位域说明
+    DRV8316_CTRL04_OCPMODE_e   OCP_MODE:2;      // 位 1-0
+    DRV8316_CTRL04_OCPLVL_e    OCP_LVL:1;       // 位 2
+    DRV8316_CTRL04_OCPRETRY_e  OCP_RETRY:1;     // 位 3
+    DRV8316_CTRL04_OCPDEGE_e   OCP_DEG:2;       // 位 5-4
+    bool                       OCP_CBC:1;       // 位 6
+    bool                       DRV_OFF:1;       // 位 7
 };
 
 union DRV8316_CTRL04_REG
@@ -556,16 +555,16 @@ union DRV8316_CTRL04_REG
     struct   DRV8316_CTRL04_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL05 register
+//! \brief DRV8316 CTRL05 寄存器对象
 //!
-struct DRV8316_CTRL05_BITS {                    // bits description
-    DRV8316_CTRL05_CSAGain_e   CSA_GAIN:2;      // Bits 1-0
-    bool                       EN_ASR:1;        // Bits 2
-    bool                       EN_AAR:1;        // Bits 3
-    uint16_t                   rsvd1:1;         // Bits 4 Reserved
-    uint16_t                   rsvd2:1;         // Bits 5 Reserved
-    DRV8316_CTRL05_ILIMRECIR_e ILIM_RECIR:1;    // Bits 6
-    uint16_t                   rsvd3:1;         // Bits 7 Reserved
+struct DRV8316_CTRL05_BITS {                    // 位域说明
+    DRV8316_CTRL05_CSAGain_e   CSA_GAIN:2;      // 位 1-0
+    bool                       EN_ASR:1;        // 位 2
+    bool                       EN_AAR:1;        // 位 3
+    uint16_t                   rsvd1:1;         // 位 4 保留
+    uint16_t                   rsvd2:1;         // 位 5 保留
+    DRV8316_CTRL05_ILIMRECIR_e ILIM_RECIR:1;    // 位 6
+    uint16_t                   rsvd3:1;         // 位 7 保留
 };
 
 union DRV8316_CTRL05_REG
@@ -574,14 +573,14 @@ union DRV8316_CTRL05_REG
     struct   DRV8316_CTRL05_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL06 register
+//! \brief DRV8316 CTRL06 寄存器对象
 //!
-struct DRV8316_CTRL06_BITS {                    // bits description
-    bool                        BUCK_DIS:1;     // Bits 0
-    DRV8316_CTRL06_BUCKSEL_e    BUCK_SEL:2;     // Bits 2-1
-    DRV8316_CTRL06_BUCKCL_e     BUCK_CL:1;      // Bits 3
-    bool                        BUCK_PS_DIS:1;  // Bits 4
-    uint16_t                    rsvd1:3;        // Bits 7:5 Reserved
+struct DRV8316_CTRL06_BITS {                    // 位域说明
+    bool                        BUCK_DIS:1;     // 位 0
+    DRV8316_CTRL06_BUCKSEL_e    BUCK_SEL:2;     // 位 2-1
+    DRV8316_CTRL06_BUCKCL_e     BUCK_CL:1;      // 位 3
+    bool                        BUCK_PS_DIS:1;  // 位 4
+    uint16_t                    rsvd1:3;        // 位 7:5 保留
 };
 
 union DRV8316_CTRL06_REG
@@ -590,12 +589,12 @@ union DRV8316_CTRL06_REG
     struct   DRV8316_CTRL06_BITS bit;
 };
 
-//! \brief Object for the DRV8316 CTRL10 register
+//! \brief DRV8316 CTRL10 寄存器对象
 //!
-struct DRV8316_CTRL10_BITS {                    // bits description
-    DRV8316_CTRL10_DLYTARGET_e  DLY_TARGET:4;   // Bits 3-0
-    bool                        DLYCMP_EN:1;    // Bits 4
-    uint16_t                    rsvd1:3;        // Bits 7:5 Reserved
+struct DRV8316_CTRL10_BITS {                    // 位域说明
+    DRV8316_CTRL10_DLYTARGET_e  DLY_TARGET:4;   // 位 3-0
+    bool                        DLYCMP_EN:1;    // 位 4
+    uint16_t                    rsvd1:3;        // 位 7:5 保留
 };
 
 union DRV8316_CTRL10_REG
@@ -604,7 +603,7 @@ union DRV8316_CTRL10_REG
     struct   DRV8316_CTRL10_BITS bit;
 };
 
-//! \brief Object for the DRV8316 registers and commands
+//! \brief DRV8316 寄存器与命令对象
 //!
 typedef struct _DRV8316_VARS_t_
 {
@@ -630,47 +629,47 @@ typedef struct _DRV8316_VARS_t_
     uint16_t            manReadData;
 }DRV8316_VARS_t;
 
-//! \brief Defines the DRV8316_VARS_t handle
+//! \brief 定义 DRV8316_VARS_t 句柄
 //!
 typedef struct _DRV8316_VARS_t_ *DRV8316VARS_Handle;
 
-//! \brief Defines the DRV8316 object
+//! \brief 定义 DRV8316 对象
 //!
 typedef struct _DRV8316_Obj_
 {
-    uint32_t  spiHandle;     //!< handle for the serial peripheral interface
-    uint32_t  gpioNumber_CS; //!< GPIO connected to the DRV8316 CS pin
-    uint32_t  gpioNumber_EN; //!< GPIO connected to the DRV8316 enable pin
-    bool      rxTimeOut;     //!< timeout flag for the RX FIFO
-    bool      enableTimeOut; //!< timeout flag for DRV8316 enable
+    uint32_t  spiHandle;     //!< 串行外设接口句柄
+    uint32_t  gpioNumber_CS; //!< 连接到 DRV8316 CS 引脚的 GPIO
+    uint32_t  gpioNumber_EN; //!< 连接到 DRV8316 使能引脚的 GPIO
+    bool      rxTimeOut;     //!< RX FIFO 的超时标志
+    bool      enableTimeOut; //!< DRV8316 使能的超时标志
 } DRV8316_Obj;
 
-//! \brief Defines the DRV8316 handle
+//! \brief 定义 DRV8316 句柄
 //!
 typedef struct _DRV8316_Obj_ *DRV8316_Handle;
 
-//! \brief Defines the DRV8316 Word type
+//! \brief 定义 DRV8316 的字类型
 //!
 typedef  uint16_t    DRV_Word_t;
 
 // **************************************************************************
-// the globals
+// 全局变量
 
 // **************************************************************************
-// the function prototypes
+// 函数原型
 
-//! \brief     Initializes the DRV8316 object
-//! \param[in] pMemory   A pointer to the memory for the DRV8316 object
-//! \param[in] numBytes  The number of bytes allocated for the DRV8316
-//!                      object, bytes
-//! \return    The DRV8316 object handle
+//! \brief     初始化 DRV8316 对象
+//! \param[in] pMemory   指向 DRV8316 对象内存的指针
+//! \param[in] numBytes  为 DRV8316 对象分配的字节数
+//!                      对象，单位：字节
+//! \return    DRV8316 对象句柄
 extern DRV8316_Handle DRV8316_init(void *pMemory);
 
-//! \brief     Builds the control word
-//! \param[in] ctrlMode  The control mode
-//! \param[in] regName   The register name
-//! \param[in] data      The data
-//! \return    The control word
+//! \brief     构建控制字
+//! \param[in] ctrlMode  控制模式
+//! \param[in] regName   寄存器名称
+//! \param[in] data      数据
+//! \return    控制字
 static inline DRV_Word_t DRV8316_buildCtrlWord(
                                             const DRV8316_CtrlMode_e ctrlMode,
                                             const DRV8316_Address_e regAddr,
@@ -693,29 +692,29 @@ static inline DRV_Word_t DRV8316_buildCtrlWord(
     DRV_Word_t ctrlWord = ctrlMode | regAddr | parity | (data & DRV8316_DATA_MASK);
 
     return(ctrlWord);
-} // end of DRV8316_buildCtrlWord() function
+} // DRV8316_buildCtrlWord() 函数结束
 
-//! \brief     Enables the DRV8316
-//! \param[in] handle     The DRV8316 handle
+//! \brief     使能 DRV8316
+//! \param[in] handle     DRV8316 句柄
 extern void DRV8316_enable(DRV8316_Handle handle);
 
-//! \brief     Sets the SPI handle in the DRV8316
-//! \param[in] handle     The DRV8316 handle
-//! \param[in] spiHandle  The SPI handle to use
+//! \brief     设置 DRV8316 的 SPI 句柄
+//! \param[in] handle     DRV8316 句柄
+//! \param[in] spiHandle  要使用的 SPI 句柄
 void DRV8316_setSPIHandle(DRV8316_Handle handle,uint32_t spiHandle);
 
-//! \brief     Sets the GPIO number in the DRV8316
-//! \param[in] handle       The DRV8316 handle
-//! \param[in] gpioHandle   The GPIO number to use
+//! \brief     设置 DRV8316 的 GPIO 编号
+//! \param[in] handle       DRV8316 句柄
+//! \param[in] gpioHandle   要使用的 GPIO 编号
 void DRV8316_setGPIOCSNumber(DRV8316_Handle handle,uint32_t gpioNumber);
 
 //! \brief     Sets the GPIO number in the DRV8316
-//! \param[in] handle       The DRV8316 handle
-//! \param[in] gpioHandle   The GPIO number to use
+//! \param[in] handle       DRV8316 句柄
+//! \param[in] gpioHandle   要使用的 GPIO 编号
 void DRV8316_setGPIOENNumber(DRV8316_Handle handle,uint32_t gpioNumber);
 
 //! \brief     Resets the enable timeout flag
-//! \param[in] handle   The DRV8316 handle
+//! \param[in] handle   DRV8316 句柄
 static inline void DRV8316_resetEnableTimeout(DRV8316_Handle handle)
 {
     DRV8316_Obj *obj = (DRV8316_Obj *)handle;
@@ -723,10 +722,10 @@ static inline void DRV8316_resetEnableTimeout(DRV8316_Handle handle)
     obj->enableTimeOut = false;
 
     return;
-} // end of DRV8316_resetEnableTimeout() function
+} // DRV8316_resetEnableTimeout() 函数结束
 
-//! \brief     Resets the RX fifo timeout flag
-//! \param[in] handle   The DRV8316 handle
+//! \brief     重置 RX FIFO 超时标志
+//! \param[in] handle   DRV8316 句柄
 static inline void DRV8316_resetRxTimeout(DRV8316_Handle handle)
 {
     DRV8316_Obj *obj = (DRV8316_Obj *)handle;
@@ -734,56 +733,56 @@ static inline void DRV8316_resetRxTimeout(DRV8316_Handle handle)
     obj->rxTimeOut = false;
 
     return;
-} // end of DRV8316_resetRxTimeout() function
+} // DRV8316_resetRxTimeout() 函数结束
 
-//! \brief     Initialize the interface to all 8320 SPI variables
-//! \param[in] handle  The DRV8316 handle
+//! \brief     初始化所有 8320 SPI 变量的接口
+//! \param[in] handle  DRV8316 句柄
 extern void DRV8316_setupSPI(DRV8316_Handle handle,
                              DRV8316_VARS_t *drv8316Vars);
 
-//! \brief     Reads data from the DRV8316 register
-//! \param[in] handle   The DRV8316 handle
-//! \param[in] regAddr  The register address
-//! \return    The data value
+//! \brief     从 DRV8316 寄存器读取数据
+//! \param[in] handle   DRV8316 句柄
+//! \param[in] regAddr  寄存器地址
+//! \return    数据值
 extern uint16_t DRV8316_readSPI(DRV8316_Handle handle,
                                 const DRV8316_Address_e regAddr);
 
-//! \brief     Writes data to the DRV8316 register
-//! \param[in] handle   The DRV8316 handle
-//! \param[in] regAddr  The register name
-//! \param[in] data     The data value
+//! \brief     向 DRV8316 寄存器写入数据
+//! \param[in] handle   DRV8316 句柄
+//! \param[in] regAddr  寄存器名称
+//! \param[in] data     数据值
 extern void DRV8316_writeSPI(DRV8316_Handle handle,
                              const DRV8316_Address_e regAddr,
                              const uint16_t data);
 
-//! \brief     Write to the DRV8316 SPI registers
-//! \param[in] handle  The DRV8316 handle
-//! \param[in] drv8316Vars  The (DRV8316_VARS_t) structure that contains
-//!                           all DRV8316 Status/Control register options
+//! \brief     写入 DRV8316 SPI 寄存器
+//! \param[in] handle  DRV8316 句柄
+//! \param[in] drv8316Vars  包含 DRV8316 状态/控制寄存器选项的结构
+//!                           所有 DRV8316 状态/控制寄存器选项
 extern void DRV8316_writeData(DRV8316_Handle handle,
                               DRV8316_VARS_t *drv8316Vars);
 
-//! \brief     Read from the DRV8316 SPI registers
-//! \param[in] handle  The DRV8316 handle
-//! \param[in] drv8316Vars  The (DRV8316_VARS_t) structure that contains
-//!                           all DRV8316 Status/Control register options
+//! \brief     读取 DRV8316 SPI 寄存器
+//! \param[in] handle  DRV8316 句柄
+//! \param[in] drv8316Vars  包含 DRV8316 状态/控制寄存器选项的结构
+//!                           所有 DRV8316 状态/控制寄存器选项
 extern void DRV8316_readData(DRV8316_Handle handle,
                              DRV8316_VARS_t *drv8316Vars);
 
 //*****************************************************************************
 //
-// Close the Doxygen group.
+// 关闭 Doxygen 分组。
 //! @}
 //
 //*****************************************************************************
 
 //*****************************************************************************
 //
-// Mark the end of the C bindings section for C++ compilers.
+// 标记 C++ 编译器下 C 语言绑定区的结束。
 //
 //*****************************************************************************
 #ifdef __cplusplus
 }
 #endif
 
-#endif // end of DRV8316S_H definition
+#endif // DRV8316S_H 定义结束
