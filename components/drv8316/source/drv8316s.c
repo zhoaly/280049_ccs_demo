@@ -32,45 +32,45 @@
 //#############################################################################
 
 //! \file   libraries/drvic/drv8316/source/drv8316s.c
-//! \brief  Contains the various functions related to the DRV8316 object
+//! \brief  包含与 DRV8316 对象相关的各类函数
 //!
 
 // **************************************************************************
-// the includes
+// 引用的头文件
 
 #include <math.h>
 
 // **************************************************************************
-// drivers
+// 驱动
 #include "drv8316s.h"
 
 // **************************************************************************
-// modules
+// 模块
 
 // **************************************************************************
-// platforms
+// 平台
 
 // **************************************************************************
-// the defines
+// 宏定义
 
 // **************************************************************************
-// the globals
+// 全局变量
 
 // **************************************************************************
-// the function prototypes
+// 函数原型
 
 DRV8316_Handle DRV8316_init(void *pMemory)
 {
     DRV8316_Handle handle;
 
-    // assign the handle
+    // 赋值句柄
     handle = (DRV8316_Handle)pMemory;
 
     DRV8316_resetRxTimeout(handle);
     DRV8316_resetEnableTimeout(handle);
 
     return(handle);
-} // end of DRV8316_init() function
+} // DRV8316_init() 函数结束
 
 void DRV8316_enable(DRV8316_Handle handle)
 {
@@ -78,11 +78,11 @@ void DRV8316_enable(DRV8316_Handle handle)
     volatile uint16_t enableWaitTimeOut;
     uint16_t n = 0;
 
-    // Enable the DRV8316
+    // 使能 DRV8316
     GPIO_writePin(obj->gpioNumber_EN, 0);
     GPIO_writePin(obj->gpioNumber_EN, 0);
 
-    // Wait for the DRV8316 to go through start up sequence
+    // 等待 DRV8316 完成启动流程
     for(n = 0; n < 0xffff; n++)
     {
         __asm(" NOP");
@@ -90,7 +90,7 @@ void DRV8316_enable(DRV8316_Handle handle)
 
     enableWaitTimeOut = 0;
 
-    // Make sure the FAULT bit is not set during startup
+    // 确保启动期间 FAULT 位未置位
     while(((DRV8316_readSPI(handle, DRV8316_ADDRESS_STATUS_0) &
             DRV8316_STAT00_FAULT_BITS) != 0) && (enableWaitTimeOut < 1000))
     {
@@ -100,50 +100,50 @@ void DRV8316_enable(DRV8316_Handle handle)
         }
     }
 
-    // Wait for the DRV8316 to go through start up sequence
+    // 等待 DRV8316 完成启动流程
     for(n = 0; n < 0xffff; n++)
     {
         __asm(" NOP");
     }
 
-    // Write 011b to this register to unlock all registers
+    // 向该寄存器写入 011b 以解锁全部寄存器
     DRV8316_writeSPI(handle,  DRV8316_ADDRESS_CONTROL_1, 0x03);
 
-    // Clear Fault, Slew rate is 200 V/μs
+    // 清除故障，转换斜率为 200 V/μs
     DRV8316_writeSPI(handle,  DRV8316_ADDRESS_CONTROL_2, 0x19);
 
     return;
-} // end of DRV8316_enable() function
+} // DRV8316_enable() 函数结束
 
 void DRV8316_setSPIHandle(DRV8316_Handle handle, uint32_t spiHandle)
 {
     DRV8316_Obj *obj = (DRV8316_Obj *)handle;
 
-    // initialize the serial peripheral interface object
+    // 初始化串行外设接口对象
     obj->spiHandle = spiHandle;
 
     return;
-} // end of DRV8316_setSPIHandle() function
+} // DRV8316_setSPIHandle() 函数结束
 
 void DRV8316_setGPIOCSNumber(DRV8316_Handle handle, uint32_t gpioNumber)
 {
     DRV8316_Obj *obj = (DRV8316_Obj *)handle;
 
-    // initialize the gpio interface object
+    // 初始化 GPIO 接口对象
     obj->gpioNumber_CS = gpioNumber;
 
     return;
-} // end of DRV8316_setGPIOCSNumber() function
+} // DRV8316_setGPIOCSNumber() 函数结束
 
 void DRV8316_setGPIOENNumber(DRV8316_Handle handle, uint32_t gpioNumber)
 {
     DRV8316_Obj *obj = (DRV8316_Obj *)handle;
 
-    // initialize the gpio interface object
+    // 初始化 GPIO 接口对象
     obj->gpioNumber_EN = gpioNumber;
 
     return;
-} // end of DRV8316_setGPIOENNumber() function
+} // DRV8316_setGPIOENNumber() 函数结束
 
 void DRV8316_setupSPI(DRV8316_Handle handle,
                       DRV8316_VARS_t *drv8316Vars)
@@ -151,8 +151,8 @@ void DRV8316_setupSPI(DRV8316_Handle handle,
     DRV8316_Address_e drvRegAddr;
     uint16_t drvDataNew;
 
-    // Set Default Values
-    // Manual Read/Write
+    // 设置默认值
+    // 手动读写
     drv8316Vars->manReadAddr  = 0;
     drv8316Vars->manReadData  = 0;
     drv8316Vars->manReadCmd = false;
@@ -160,63 +160,63 @@ void DRV8316_setupSPI(DRV8316_Handle handle,
     drv8316Vars->manWriteData = 0;
     drv8316Vars->manWriteCmd = false;
 
-    // Read/Write
+    // 读写控制
     drv8316Vars->readCmd  = false;
     drv8316Vars->writeCmd = false;
 
-    // Read registers for default values
-    // Read Status Register 0
+    // 读取寄存器以获得默认值
+    // 读取状态寄存器 0
     drvRegAddr = DRV8316_ADDRESS_STATUS_0;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->statReg00.all = drvDataNew;
 
-    // Read Status Register 1
+    // 读取状态寄存器 1
     drvRegAddr = DRV8316_ADDRESS_STATUS_1;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->statReg01.all = drvDataNew;
 
-    // Read Status Register 2
+    // 读取状态寄存器 2
     drvRegAddr = DRV8316_ADDRESS_STATUS_2;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->statReg02.all = drvDataNew;
 
-      // Read Control Register 1
+      // 读取控制寄存器 1
     drvRegAddr = DRV8316_ADDRESS_CONTROL_1;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg01.all = drvDataNew;
 
-    // Read Control Register 2
+    // 读取控制寄存器 2
     drvRegAddr = DRV8316_ADDRESS_CONTROL_2;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg02.all = drvDataNew;
 
-    // Read Control Register 3
+    // 读取控制寄存器 3
     drvRegAddr = DRV8316_ADDRESS_CONTROL_3;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg02.all = drvDataNew;
 
-    // Read Control Register 4
+    // 读取控制寄存器 4
     drvRegAddr = DRV8316_ADDRESS_CONTROL_4;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg04.all = drvDataNew;
 
-    // Read Control Register 5
+    // 读取控制寄存器 5
     drvRegAddr = DRV8316_ADDRESS_CONTROL_5;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg05.all = drvDataNew;
 
-    // Read Control Register 6
+    // 读取控制寄存器 6
     drvRegAddr = DRV8316_ADDRESS_CONTROL_6;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg06.all = drvDataNew;
 
-    // Read Control Register 10
+    // 读取控制寄存器 10
     drvRegAddr = DRV8316_ADDRESS_CONTROL_10;
     drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
     drv8316Vars->ctrlReg10.all = drvDataNew;
 
     return;
-} // end of DRV8316_setupSPI() function
+} // DRV8316_setupSPI() 函数结束
 
 uint16_t DRV8316_readSPI(DRV8316_Handle handle,
                          const DRV8316_Address_e regAddr)
@@ -285,7 +285,7 @@ uint16_t DRV8316_readSPI(DRV8316_Handle handle,
     readWord = SPI_readDataNonBlocking(obj->spiHandle);
 
     return(readWord & DRV8316_DATA_MASK);
-} // end of DRV8316_readSPI() function
+} // DRV8316_readSPI() 函数结束
 
 
 void DRV8316_writeSPI(DRV8316_Handle handle, const DRV8316_Address_e regAddr,
@@ -334,7 +334,7 @@ void DRV8316_writeSPI(DRV8316_Handle handle, const DRV8316_Address_e regAddr,
 #endif  // DRV_CS_GPIO
 
     return;
-}  // end of DRV8316_writeSPI() function
+}  // DRV8316_writeSPI() 函数结束
 
 
 void DRV8316_writeData(DRV8316_Handle handle, DRV8316_VARS_t *drv8316Vars)
@@ -394,7 +394,7 @@ void DRV8316_writeData(DRV8316_Handle handle, DRV8316_VARS_t *drv8316Vars)
     }
 
     return;
-}  // end of DRV8316_writeData() function
+}  // DRV8316_writeData() 函数结束
 
 void DRV8316_readData(DRV8316_Handle handle, DRV8316_VARS_t *drv8316Vars)
 {
@@ -403,53 +403,53 @@ void DRV8316_readData(DRV8316_Handle handle, DRV8316_VARS_t *drv8316Vars)
 
     if(drv8316Vars->readCmd)
     {
-        // Read registers for default values
-        // Read Status Register 0
+        // 读取寄存器以获得默认值
+        // 读取状态寄存器 0
         drvRegAddr = DRV8316_ADDRESS_STATUS_0;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->statReg00.all  = drvDataNew;
 
-        // Read Status Register 1
+        // 读取状态寄存器 1
         drvRegAddr = DRV8316_ADDRESS_STATUS_1;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->statReg01.all  = drvDataNew;
 
-        // Read Status Register 2
+        // 读取状态寄存器 2
         drvRegAddr = DRV8316_ADDRESS_STATUS_2;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->statReg02.all  = drvDataNew;
 
-        // Read Control Register 1
+        // 读取控制寄存器 1
         drvRegAddr = DRV8316_ADDRESS_CONTROL_1;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg01.all  = drvDataNew;
 
-        // Read Control Register 2
+        // 读取控制寄存器 2
         drvRegAddr = DRV8316_ADDRESS_CONTROL_2;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg02.all  = drvDataNew;
 
-        // Read Control Register 3
+        // 读取控制寄存器 3
         drvRegAddr = DRV8316_ADDRESS_CONTROL_3;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg03.all  = drvDataNew;
 
-        // Read Control Register 4
+        // 读取控制寄存器 4
         drvRegAddr = DRV8316_ADDRESS_CONTROL_4;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg04.all  = drvDataNew;
 
-        // Read Control Register 5
+        // 读取控制寄存器 5
         drvRegAddr = DRV8316_ADDRESS_CONTROL_5;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg05.all  = drvDataNew;
 
-        // Read Control Register 6
+        // 读取控制寄存器 6
         drvRegAddr = DRV8316_ADDRESS_CONTROL_6;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg06.all  = drvDataNew;
 
-        // Read Control Register 10
+        // 读取控制寄存器 10
         drvRegAddr = DRV8316_ADDRESS_CONTROL_10;
         drvDataNew = DRV8316_readSPI(handle, drvRegAddr);
         drv8316Vars->ctrlReg10.all  = drvDataNew;
@@ -469,6 +469,6 @@ void DRV8316_readData(DRV8316_Handle handle, DRV8316_VARS_t *drv8316Vars)
     }
 
     return;
-}  // end of DRV8316_readData() function
+}  // DRV8316_readData() 函数结束
 
 // end of file

@@ -43,8 +43,7 @@
 
 //*****************************************************************************
 //
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
+// 若使用 C++ 编译器构建，请确保此头文件中的所有定义均采用 C 语言链接。
 //
 //*****************************************************************************
 #ifdef __cplusplus
@@ -61,61 +60,55 @@ extern "C"
 
 #include "types.h"
 #include "filter_fo.h"
-#include "libraries/math/include/math.h"
+#include "math.h"
 
 //*****************************************************************************
 //
-//! \brief Defines the PID controller object
+//! \brief 定义 PID 控制器对象
 //
 //*****************************************************************************
 typedef struct _PID_Obj_
 {
-    float32_t Kp;                       //!< the proportional gain for the PID
-                                      //!< controller
-    float32_t Ki;                       //!< the integral gain for the PID
-                                      //!< controller
-    float32_t Kd;                       //!< the derivative gain for the PID
-                                      //!< controller
-    float32_t Ui;                       //!< the integrator start value for the
-                                      //!< PID controller
-    float32_t refValue;                 //!< the reference input value
-    float32_t fbackValue;               //!< the feedback input value
-    float32_t ffwdValue;                //!< the feedforward input value
+    float32_t Kp;                       //!< PID 控制器的比例增益
+    float32_t Ki;                       //!< PID 控制器的积分增益
+    float32_t Kd;                       //!< PID 控制器的微分增益
+    float32_t Ui;                       //!< PID 控制器积分器的初始值
+    float32_t refValue;                 //!< 参考输入值
+    float32_t fbackValue;               //!< 反馈输入值
+    float32_t ffwdValue;                //!< 前馈输入值
 
-    float32_t outMin;                   //!< the minimum output value allowed for
-                                      //!< the PID controller
-    float32_t outMax;                   //!< the maximum output value allowed for
-                                      //!< the PID controller
-    FILTER_FO_Handle derFilterHandle; //!< the derivative filter handle
-    FILTER_FO_Obj derFilter;          //!< the derivative filter object
+    float32_t outMin;                   //!< PID 控制器允许的最小输出值
+    float32_t outMax;                   //!< PID 控制器允许的最大输出值
+    FILTER_FO_Handle derFilterHandle; //!< 微分滤波器句柄
+    FILTER_FO_Obj derFilter;          //!< 微分滤波器对象
 } PID_Obj;
 
 //*****************************************************************************
 //
-//! \brief Defines the PID handle
+//! \brief 定义 PID 控制器句柄
 //
 //*****************************************************************************
 typedef struct _PID_Obj_ *PID_Handle;
 
 //*****************************************************************************
 //
-//! \brief     Gets the derivative filter parameters
+//! \brief     获取微分滤波器参数
 //!
 //!            y[n] = b0*x[n] + b1*x[n-1] - a1*y[n-1]
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] b0      The numerator filter coefficient value for z^0
+//! \param[in] b0      z^0 的分子滤波系数值
 //!
-//! \param[in] b1      The numerator filter coefficient value for z^(-1)
+//! \param[in] b1      z^(-1) 的分子滤波系数值
 //!
-//! \param[in] a1      The denominator filter coefficient value for z^(-1)
+//! \param[in] a1      z^(-1) 的分母滤波系数值
 //!
-//! \param[in] x1      The input value at time sample n=-1
+//! \param[in] x1      采样时刻 n=-1 的输入值
 //!
-//! \param[in] y1      The output value at time sample n=-1
+//! \param[in] y1      采样时刻 n=-1 的输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -124,11 +117,11 @@ PID_getDerFilterParams(PID_Handle handle, float32_t *b0, float32_t *b1,
 
 //*****************************************************************************
 //
-//! \brief     Gets the feedback value in the PID controller
+//! \brief     获取 PID 控制器中的反馈值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The feedback value in the PID controller
+//! \return    PID 控制器中的反馈值
 //
 //*****************************************************************************
 static inline float32_t
@@ -137,15 +130,15 @@ PID_getFbackValue(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->fbackValue);
-} // end of PID_getFbackValue() function
+} // PID_getFbackValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the feedforward value in the PID controller
+//! \brief     获取 PID 控制器中的前馈值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The feedforward value in the PID controller
+//! \return    PID 控制器中的前馈值
 //
 //*****************************************************************************
 static inline float32_t
@@ -154,21 +147,21 @@ PID_getFfwdValue(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->ffwdValue);
-} // end of PID_getFfwdValue() function
+} // PID_getFfwdValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief      Gets the gains in the PID controller
+//! \brief      获取 PID 控制器的增益
 //!
-//! \param[in]  handle  The PID controller handle
+//! \param[in]  handle  PID 控制器句柄
 //!
-//! \param[out] pKp     The pointer to the proportional gain value
+//! \param[out] pKp     指向比例增益的指针
 //!
-//! \param[out] pKi     The pointer to the integrator gain value
+//! \param[out] pKi     指向积分增益的指针
 //!
-//! \param[out] pKd     The pointer to the derivative gain value
+//! \param[out] pKd     指向微分增益的指针
 //!
-//! \return     None
+//! \return     无
 //
 //*****************************************************************************
 static inline void
@@ -181,15 +174,15 @@ PID_getGains(PID_Handle handle, float32_t *pKp, float32_t *pKi, float32_t *pKd)
     *pKd = obj->Kd;
 
     return;
-} // end of PID_getGains() function
+} // PID_getGains() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the derivative gain in the PID controller
+//! \brief     获取 PID 控制器的微分增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The derivative gain in the PID controller
+//! \return    PID 控制器的微分增益
 //
 //*****************************************************************************
 static inline float32_t
@@ -198,15 +191,15 @@ PID_getKd(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->Kd);
-} // end of PID_getKd() function
+} // PID_getKd() 函数结束
 
 //*****************************************************************************
 //
 //! \brief     Gets the integral gain in the PID controller
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The integral gain in the PID controller
+//! \return    PID 控制器的积分增益
 //
 //*****************************************************************************
 static inline float32_t
@@ -215,15 +208,15 @@ PID_getKi(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->Ki);
-} // end of PID_getKi() function
+} // PID_getKi() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the proportional gain in the PID controller
+//! \brief     获取 PID 控制器的比例增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The proportional gain in the PID controller
+//! \return    PID 控制器的比例增益
 //
 //*****************************************************************************
 static inline float32_t
@@ -232,20 +225,19 @@ PID_getKp(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->Kp);
-} // end of PID_getKp() function
+} // PID_getKp() 函数结束
 
 //*****************************************************************************
 //
-//! \brief      Gets the minimum and maximum output value allowed in the PID
-//!             controller
+//! \brief      获取 PID 控制器允许的最小与最大输出值
 //!
-//! \param[in]  handle     The PID controller handle
+//! \param[in]  handle     PID 控制器句柄
 //!
-//! \param[out] pOutMin    The pointer to the minimum output value allowed
+//! \param[out] pOutMin    指向允许的最小输出值的指针
 //!
-//! \param[out] pOutMax    The pointer to the maximum output value allowed
+//! \param[out] pOutMax    指向允许的最大输出值的指针
 //!
-//! \return     None
+//! \return     无
 //
 //*****************************************************************************
 static inline void
@@ -257,15 +249,15 @@ PID_getMinMax(PID_Handle handle, float32_t *pOutMin, float32_t *pOutMax)
     *pOutMax = obj->outMax;
 
     return;
-} // end of PID_getMinMax() function
+} // PID_getMinMax() 函数结束
 
 //*****************************************************************************
 //
-//! \brief      Gets the maximum output value allowed in the PID controller
+//! \brief      获取 PID 控制器允许的最大输出值
 //!
-//! \param[in]  handle  The PID controller handle
+//! \param[in]  handle  PID 控制器句柄
 //!
-//! \return     The maximum output value allowed
+//! \return     允许的最大输出值
 //
 //*****************************************************************************
 static inline float32_t
@@ -274,15 +266,15 @@ PID_getOutMax(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->outMax);
-} // end of PID_getOutMax() function
+} // PID_getOutMax() 函数结束
 
 //*****************************************************************************
 //
-//! \brief      Gets the minimum output value allowed in the PID controller
+//! \brief      获取 PID 控制器允许的最小输出值
 //!
-//! \param[in]  handle  The PID controller handle
+//! \param[in]  handle  PID 控制器句柄
 //!
-//! \return     The minimum output value allowed
+//! \return     允许的最小输出值
 //
 //*****************************************************************************
 static inline float32_t
@@ -291,15 +283,15 @@ PID_getOutMin(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->outMin);
-} // end of PID_getOutMin() function
+} // PID_getOutMin() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the reference value in the PID controller
+//! \brief     获取 PID 控制器中的参考值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The reference value in the PID controller
+//! \return    PID 控制器中的参考值
 //
 //*****************************************************************************
 static inline float32_t
@@ -308,15 +300,15 @@ PID_getRefValue(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->refValue);
-} // end of PID_getRefValue() function
+} // PID_getRefValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the integrator start value in the PID controller
+//! \brief     获取 PID 控制器积分器的初始值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \return    The integrator start value for the PID controller
+//! \return    PID 控制器积分器的初始值
 //
 //*****************************************************************************
 static inline float32_t
@@ -325,18 +317,17 @@ PID_getUi(PID_Handle handle)
     PID_Obj *obj = (PID_Obj *)handle;
 
     return(obj->Ui);
-} // end of PID_getUi() function
+} // PID_getUi() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Initializes the PID controller
+//! \brief     初始化 PID 控制器
 //!
-//! \param[in] pMemory   A pointer to the memory for the PID controller object
+//! \param[in] pMemory   指向 PID 控制器对象内存的指针
 //!
-//! \param[in] numBytes  The number of bytes allocated for the PID controller
-//!                      object, bytes
+//! \param[in] numBytes  为 PID 控制器对象分配的字节数
 //!
-//! \return The PID controller (PID) object handle
+//! \return PID 控制器（PID）对象句柄
 //
 //*****************************************************************************
 extern PID_Handle
@@ -344,23 +335,23 @@ PID_init(void *pMemory, const size_t numBytes);
 
 //*****************************************************************************
 //
-//! \brief     Sets the derivative filter parameters
+//! \brief     设置微分滤波器参数
 //!
 //!            y[n] = b0*x[n] + b1*x[n-1] - a1*y[n-1]
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] b0      The numerator filter coefficient value for z^0
+//! \param[in] b0      z^0 的分子滤波系数值
 //!
-//! \param[in] b1      The numerator filter coefficient value for z^(-1)
+//! \param[in] b1      z^(-1) 的分子滤波系数值
 //!
-//! \param[in] a1      The denominator filter coefficient value for z^(-1)
+//! \param[in] a1      z^(-1) 的分母滤波系数值
 //!
-//! \param[in] x1      The input value at time sample n=-1
+//! \param[in] x1      采样时刻 n=-1 的输入值
 //!
-//! \param[in] y1      The output value at time sample n=-1
+//! \param[in] y1      采样时刻 n=-1 的输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -369,13 +360,13 @@ PID_setDerFilterParams(PID_Handle handle, const float32_t b0, const float32_t b1
 
 //*****************************************************************************
 //
-//! \brief     Sets the feedback value in the PID controller
+//! \brief     设置 PID 控制器中的反馈值
 //!
-//! \param[in] handle      The PID controller handle
+//! \param[in] handle      PID 控制器句柄
 //!
-//! \param[in] fbackValue  The feedback value
+//! \param[in] fbackValue  反馈值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -386,17 +377,17 @@ PID_setFbackValue(PID_Handle handle, const float32_t fbackValue)
     obj->fbackValue = fbackValue;
 
     return;
-} // end of PID_setFbackValue() function
+} // PID_setFbackValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the feedforward value in the PID controller
+//! \brief     设置 PID 控制器中的前馈值
 //!
-//! \param[in] handle     The PID controller handle
+//! \param[in] handle     PID 控制器句柄
 //!
-//! \param[in] ffwdValue  The feedforward value
+//! \param[in] ffwdValue  前馈值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -407,21 +398,21 @@ PID_setFfwdValue(PID_Handle handle, const float32_t ffwdValue)
     obj->ffwdValue = ffwdValue;
 
     return;
-} // end of PID_setFfwdValue() function
+} // PID_setFfwdValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the gains in the PID controller
+//! \brief     设置 PID 控制器的增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] Kp      The proportional gain for the PID controller
+//! \param[in] Kp      PID 控制器的比例增益
 //!
-//! \param[in] Ki      The integrator gain for the PID controller
+//! \param[in] Ki      PID 控制器的积分增益
 //!
-//! \param[in] Kd      The derivative gain for the PID controller
+//! \param[in] Kd      PID 控制器的微分增益
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -435,17 +426,17 @@ PID_setGains(PID_Handle handle, const float32_t Kp, const float32_t Ki,
     obj->Kd = Kd;
 
     return;
-} // end of PID_setGains() function
+} // PID_setGains() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the derivative gain in the PID controller
+//! \brief     设置 PID 控制器的微分增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] Kd      The derivative gain for the PID controller
+//! \param[in] Kd      PID 控制器的微分增益
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -456,17 +447,17 @@ PID_setKd(PID_Handle handle, const float32_t Kd)
     obj->Kd = Kd;
 
     return;
-} // end of PID_setKd() function
+} // PID_setKd() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the integral gain in the PID controller
+//! \brief     设置 PID 控制器的积分增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] Ki      The integral gain for the PID controller
+//! \param[in] Ki      PID 控制器的积分增益
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -477,17 +468,17 @@ PID_setKi(PID_Handle handle, const float32_t Ki)
     obj->Ki = Ki;
 
     return;
-} // end of PID_setKi() function
+} // PID_setKi() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the proportional gain in the PID controller
+//! \brief     设置 PID 控制器的比例增益
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] Kp      The proportional gain for the PID controller
+//! \param[in] Kp      PID 控制器的比例增益
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -498,20 +489,19 @@ PID_setKp(PID_Handle handle, const float32_t Kp)
     obj->Kp = Kp;
 
     return;
-} // end of PID_setKp() function
+} // PID_setKp() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the minimum and maximum output value allowed in the PID
-//!            controller
+//! \brief     设置 PID 控制器允许的最小与最大输出值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] outMin  The minimum output value allowed
+//! \param[in] outMin  允许的最小输出值
 //!
-//! \param[in] outMax  The maximum output value allowed
+//! \param[in] outMax  允许的最大输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -523,17 +513,17 @@ PID_setMinMax(PID_Handle handle, const float32_t outMin, const float32_t outMax)
     obj->outMax = outMax;
 
     return;
-} // end of PID_setMinMax() function
+} // PID_setMinMax() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the maximum output value allowed in the PID controller
+//! \brief     设置 PID 控制器允许的最大输出值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] outMax  The maximum output value allowed
+//! \param[in] outMax  允许的最大输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -544,17 +534,17 @@ PID_setOutMax(PID_Handle handle, const float32_t outMax)
     obj->outMax = outMax;
 
     return;
-} // end of PID_setOutMax() function
+} // PID_setOutMax() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the minimum output value allowed in the PID controller
+//! \brief     设置 PID 控制器允许的最小输出值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] outMax  The minimum output value allowed
+//! \param[in] outMax  允许的最小输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -565,17 +555,17 @@ PID_setOutMin(PID_Handle handle, const float32_t outMin)
     obj->outMin = outMin;
 
     return;
-} // end of PID_setOutMin() function
+} // PID_setOutMin() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the reference value in the PID controller
+//! \brief     设置 PID 控制器中的参考值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] refValue   The reference value
+//! \param[in] refValue   参考值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -586,17 +576,17 @@ PID_setRefValue(PID_Handle handle, const float32_t refValue)
     obj->refValue = refValue;
 
     return;
-} // end of PID_setRefValue() function
+} // PID_setRefValue() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the integrator start value in the PID controller
+//! \brief     设置 PID 控制器积分器的初始值
 //!
-//! \param[in] handle  The PID controller handle
+//! \param[in] handle  PID 控制器句柄
 //!
-//! \param[in] Ui      The integral start value for the PID controller
+//! \param[in] Ui      PID 控制器的积分初始值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -607,23 +597,23 @@ PID_setUi(PID_Handle handle, const float32_t Ui)
     obj->Ui = Ui;
 
     return;
-} // end of PID_setUi() function
+} // PID_setUi() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Runs the parallel form of the PID controller
+//! \brief     运行 PID 控制器的并联形式
 //!
-//! \param[in] handle      The PID controller handle
+//! \param[in] handle      PID 控制器句柄
 //!
-//! \param[in] refValue    The reference value to the controller
+//! \param[in] refValue    控制器的参考值
 //!
-//! \param[in] fbackValue  The feedback value to the controller
+//! \param[in] fbackValue  控制器的反馈值
 //!
-//! \param[in] ffwdValue   The feedforward value to the controller
+//! \param[in] ffwdValue   控制器的前馈值
 //!
-//! \param[in] pOutValue   The pointer to the controller output value
+//! \param[in] pOutValue   指向控制器输出值的指针
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -646,12 +636,12 @@ PID_run_parallel(PID_Handle handle, const float32_t refValue,
     Error = refValue - fbackValue;
 
     //
-    // Compute the proportional output
+    // 计算比例输出
     //
     Up = Kp * Error;
     
     //
-    // Compute the integral output
+    // 计算积分输出
     //
     Ui = MATH_sat(Ui + (Ki * Error),outMax,outMin);
 
@@ -659,7 +649,7 @@ PID_run_parallel(PID_Handle handle, const float32_t refValue,
     Ud = FILTER_FO_run(obj->derFilterHandle,Ud_tmp);
 
     //
-    // Compute the derivative term
+    // 计算微分项
     //
     PID_setUi(handle,Ui);
     PID_setRefValue(handle,refValue);
@@ -667,28 +657,28 @@ PID_run_parallel(PID_Handle handle, const float32_t refValue,
     PID_setFfwdValue(handle,ffwdValue);
 
     //
-    // Saturate the output
+    // 限幅输出
     //
     *pOutValue = MATH_sat(Up + Ui + Ud + ffwdValue,outMax,outMin);
 
     return;
-} // end of PID_run_parallel() function
+} // PID_run_parallel() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Runs the series form of the PID controller
+//! \brief     运行 PID 控制器的串联形式
 //!
-//! \param[in] handle      The PID controller handle
+//! \param[in] handle      PID 控制器句柄
 //!
-//! \param[in] refValue    The reference value to the controller
+//! \param[in] refValue    控制器的参考值
 //!
-//! \param[in] fbackValue  The feedback value to the controller
+//! \param[in] fbackValue  控制器的反馈值
 //!
-//! \param[in] ffwdValue   The feedforward value to the controller
+//! \param[in] ffwdValue   控制器的前馈值
 //!
-//! \param[in] pOutValue   The pointer to the controller output value
+//! \param[in] pOutValue   指向控制器输出值的指针
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -711,17 +701,17 @@ PID_run_series(PID_Handle handle, const float32_t refValue,
     Error = refValue - fbackValue;
 
     //
-    // Compute the proportional output
+    // 计算比例输出
     //
     Up = Kp * Error;
     
     //
-    // Compute the integral output with saturation
+    // 计算带限幅的积分输出
     //
     Ui = MATH_sat(Ui + (Ki * Up),outMax,outMin);
 
     //
-    // Compute the derivative term
+    // 计算微分项
     //
     Ud_tmp = Kd * Ui;
     Ud = FILTER_FO_run(obj->derFilterHandle,Ud_tmp);
@@ -732,23 +722,23 @@ PID_run_series(PID_Handle handle, const float32_t refValue,
     PID_setFfwdValue(handle,ffwdValue);
 
     //
-    // Saturate the output
+    // 限幅输出
     //
     *pOutValue = MATH_sat(Up + Ui + Ud + ffwdValue,outMax,outMin);
 
     return;
-} // end of PID_run_series() function
+} // PID_run_series() 函数结束
 
 //*****************************************************************************
 //
-// Close the Doxygen group.
+// 关闭 Doxygen 分组。
 //! @}
 //
 //*****************************************************************************
 
 //*****************************************************************************
 //
-// Mark the end of the C bindings section for C++ compilers.
+// 标记 C++ 编译器下 C 语言绑定区的结束。
 //
 //*****************************************************************************
 #ifdef __cplusplus

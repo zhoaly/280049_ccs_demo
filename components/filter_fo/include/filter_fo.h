@@ -42,8 +42,7 @@
 
 //*****************************************************************************
 //
-// If building with a C++ compiler, make all of the definitions in this header
-// have a C binding.
+// 若使用 C++ 编译器构建，请确保此头文件中的所有定义均采用 C 语言链接。
 //
 //*****************************************************************************
 #ifdef __cplusplus
@@ -62,32 +61,32 @@ extern "C"
 
 //*****************************************************************************
 //
-//! \brief Defines the first-order filter (FILTER_FO) object
+//! \brief 定义一阶滤波器（FILTER_FO）对象
 //
 //*****************************************************************************
 typedef struct _FILTER_FO_Obj_
 {
-    float32_t a1;       //!< the denominator filter coefficient value for z^(-1)
-    float32_t b0;       //!< the numerator filter coefficient value for z^0
-    float32_t b1;       //!< the numerator filter coefficient value for z^(-1)
-    float32_t x1;       //!< the input value at time sample n=-1
-    float32_t y1;       //!< the output value at time sample n=-1
+    float32_t a1;       //!< z^(-1) 的分母滤波系数值
+    float32_t b0;       //!< z^0 的分子滤波系数值
+    float32_t b1;       //!< z^(-1) 的分子滤波系数值
+    float32_t x1;       //!< 采样时刻 n=-1 的输入值
+    float32_t y1;       //!< 采样时刻 n=-1 的输出值
 } FILTER_FO_Obj;
 
 //*****************************************************************************
 //
-//! \brief Defines the first-order filter (FILTER_FO) handle
+//! \brief 定义一阶滤波器（FILTER_FO）句柄
 //
 //*****************************************************************************
 typedef struct _FILTER_FO_Obj_ *FILTER_FO_Handle;
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter denominator coefficient a1
+//! \brief     获取一阶滤波器的分母系数 a1
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \return    The filter coefficient value for z^(-1)
+//! \return    z^(-1) 的滤波器系数值
 //
 //*****************************************************************************
 static inline float32_t
@@ -96,15 +95,15 @@ FILTER_FO_get_a1(FILTER_FO_Handle handle)
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
 
     return(obj->a1);
-} // end of FILTER_FO_get_a1() function
+} // FILTER_FO_get_a1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter numerator coefficient b0
+//! \brief     获取一阶滤波器的分子系数 b0
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \return    The filter coefficient value for z^0
+//! \return    z^0 的滤波器系数值
 //
 //*****************************************************************************
 static inline float32_t
@@ -113,15 +112,15 @@ FILTER_FO_get_b0(FILTER_FO_Handle handle)
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
 
     return(obj->b0);
-} // end of FILTER_FO_get_b0() function
+} // FILTER_FO_get_b0() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter numerator coefficient b1
+//! \brief     获取一阶滤波器的分子系数 b1
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \return    The filter coefficient value for z^(-1)
+//! \return    z^(-1) 的滤波器系数值
 //
 //*****************************************************************************
 static inline float32_t
@@ -130,15 +129,15 @@ FILTER_FO_get_b1(FILTER_FO_Handle handle)
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
 
     return(obj->b1);
-} // end of FILTER_FO_get_b1() function
+} // FILTER_FO_get_b1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter input value at time sample n=-1
+//! \brief     获取一阶滤波器在采样时刻 n=-1 的输入值
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \return    The input value at time sample n=-1
+//! \return    采样时刻 n=-1 的输入值
 //
 //*****************************************************************************
 static inline float32_t
@@ -147,15 +146,15 @@ FILTER_FO_get_x1(FILTER_FO_Handle handle)
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
 
     return(obj->x1);
-} // end of FILTER_FO_get_x1() function
+} // FILTER_FO_get_x1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter output value at time sample n=-1
+//! \brief     获取一阶滤波器在采样时刻 n=-1 的输出值
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \return    The output value at time sample n=-1
+//! \return    采样时刻 n=-1 的输出值
 //
 //*****************************************************************************
 static inline float32_t
@@ -164,18 +163,17 @@ FILTER_FO_get_y1(FILTER_FO_Handle handle)
     FILTER_FO_Obj *obj = (FILTER_FO_Obj *)handle;
 
     return(obj->y1);
-} // end of FILTER_FO_get_y1() function
+} // FILTER_FO_get_y1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter denominator coefficients
+//! \brief     获取一阶滤波器的分母系数
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] pa1     The pointer to memory for the filter coefficient value
-//!                    for z^(-1)
+//! \param[in] pa1     指向 z^(-1) 滤波器系数值的内存指针
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -183,17 +181,15 @@ FILTER_FO_getDenCoeffs(FILTER_FO_Handle handle, float32_t *pa1);
 
 //*****************************************************************************
 //
-//! \brief     Gets the initial conditions of the first-order filter
+//! \brief     获取一阶滤波器的初始条件
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] px1     The pointer to memory for the input value at time
-//!                    sample n=-1
+//! \param[in] px1     指向采样时刻 n=-1 输入值的内存指针
 //!
-//! \param[in] py1     The pointer to memory for the output value at time
-//!                    sample n=-1
+//! \param[in] py1     指向采样时刻 n=-1 输出值的内存指针
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -202,17 +198,15 @@ FILTER_FO_getInitialConditions(FILTER_FO_Handle handle, float32_t *px1,
 
 //*****************************************************************************
 //
-//! \brief     Gets the first-order filter numerator coefficients
+//! \brief     获取一阶滤波器的分子系数
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] pb0     The pointer to memory for the filter coefficient
-//!                    value for z^0
+//! \param[in] pb0     指向 z^0 滤波器系数值的内存指针
 //!
-//! \param[in] pb1     The pointer to memory for the filter coefficient
-//!                    value for z^(-1)
+//! \param[in] pb1     指向 z^(-1) 滤波器系数值的内存指针
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -220,15 +214,13 @@ FILTER_FO_getNumCoeffs(FILTER_FO_Handle handle, float32_t *pb0, float32_t *pb1);
 
 //*****************************************************************************
 //
-//! \brief     Initializes the first-order filter
+//! \brief     初始化一阶滤波器
 //!
-//! \param[in] pMemory   A pointer to the memory for the first-order
-//!                      filter object
+//! \param[in] pMemory   指向一阶滤波器对象内存的指针
 //!
-//! \param[in] numBytes  The number of bytes allocated for the first-order
-//!                      filter object, bytes
+//! \param[in] numBytes  为一阶滤波器对象分配的字节数
 //!
-//! \return    The filter (FILTER) object handle
+//! \return    滤波器（FILTER）对象句柄
 //
 //*****************************************************************************
 extern FILTER_FO_Handle
@@ -236,14 +228,14 @@ FILTER_FO_init(void *pMemory, const size_t numBytes);
 
 //*****************************************************************************
 //
-//! \brief     Runs a first-order filter of the form
+//! \brief     运行如下形式的一阶滤波器
 //!            y[n] = b0*x[n] + b1*x[n-1] - a1*y[n-1]
 //!
-//! \param[in] handle      The filter handle
+//! \param[in] handle      滤波器句柄
 //!
-//! \param[in] inputValue  The input value to filter
+//! \param[in] inputValue  待滤波的输入值
 //!
-//! \return    The output value from the filter
+//! \return    滤波后的输出值
 //
 //*****************************************************************************
 #ifdef __TMS320C28XX_CLA__
@@ -264,30 +256,30 @@ FILTER_FO_run(FILTER_FO_Handle handle, const float32_t inputValue)
     float32_t x0 = inputValue;
 
     //
-    // Compute the output
+    // 计算输出
     //
     y0 = (b0 * x0) + (b1 * x1) - (a1 * y1);
     // y0 = (b0 * inputValue) + (a1 * y1);
 
     //
-    // Store values for next time
+    // 保存数值以供下次使用
     //
     obj->x1 = inputValue;
     obj->y1 = y0;
 
     return(y0);
-} // end of FILTER_FO_run() function
+} // FILTER_FO_run() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Runs a first-order filter of the form
+//! \brief     运行如下形式的一阶滤波器
 //!            y[n] = b0*x[n] - a1*y[n-1]
 //!
-//! \param[in] handle      The filter handle
+//! \param[in] handle      滤波器句柄
 //!
-//! \param[in] inputValue  The input value to filter
+//! \param[in] inputValue  待滤波的输入值
 //!
-//! \return    The output value from the filter
+//! \return    滤波后的输出值
 //
 //*****************************************************************************
 static inline float32_t
@@ -300,27 +292,27 @@ FILTER_FO_run_form_0(FILTER_FO_Handle handle, const float32_t inputValue)
     float32_t y1 = obj->y1;
 
     //
-    // Compute the output
+    // 计算输出
     //
     float32_t y0 = (b0 * inputValue) - (a1 * y1);
 
     //
-    // Store values for next time
+    // 保存数值以供下次使用
     //
     obj->y1 = y0;
 
     return(y0);
-} // end of FILTER_FO_run_form_0() function
+} // FILTER_FO_run_form_0() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter denominator coefficient a1
+//! \brief     设置一阶滤波器的分母系数 a1
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] a1      The filter coefficient value for z^(-1)
+//! \param[in] a1      z^(-1) 的滤波器系数值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -331,17 +323,17 @@ FILTER_FO_set_a1(FILTER_FO_Handle handle, const float32_t a1)
     obj->a1 = a1;
 
     return;
-} // end of FILTER_FO_set_a1() function
+} // FILTER_FO_set_a1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter numerator coefficient b0
+//! \brief     设置一阶滤波器的分子系数 b0
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] b0      The filter coefficient value for z^0
+//! \param[in] b0      z^0 的滤波器系数值
 //!
-//! \returnh   None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -352,17 +344,17 @@ FILTER_FO_set_b0(FILTER_FO_Handle handle, const float32_t b0)
     obj->b0 = b0;
 
     return;
-} // end of FILTER_FO_set_b0() function
+} // FILTER_FO_set_b0() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter numerator coefficient b1
+//! \brief     设置一阶滤波器的分子系数 b1
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] b1      The filter coefficient value for z^(-1)
+//! \param[in] b1      z^(-1) 的滤波器系数值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -373,17 +365,17 @@ FILTER_FO_set_b1(FILTER_FO_Handle handle, const float32_t b1)
     obj->b1 = b1;
 
     return;
-} // end of FILTER_FO_set_b1() function
+} // FILTER_FO_set_b1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter input value at time sample n=-1
+//! \brief     设置一阶滤波器在采样时刻 n=-1 的输入值
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] x1      The input value at time sample n=-1
+//! \param[in] x1      采样时刻 n=-1 的输入值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -394,17 +386,17 @@ FILTER_FO_set_x1(FILTER_FO_Handle handle, const float32_t x1)
     obj->x1 = x1;
 
     return;
-} // end of FILTER_FO_set_x1() function
+} // FILTER_FO_set_x1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter output value at time sample n=-1
+//! \brief     设置一阶滤波器在采样时刻 n=-1 的输出值
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] y1      The output value at time sample n=-1
+//! \param[in] y1      采样时刻 n=-1 的输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 static inline void
@@ -415,17 +407,17 @@ FILTER_FO_set_y1(FILTER_FO_Handle handle, const float32_t y1)
     obj->y1 = y1;
 
     return;
-} // end of FILTER_FO_set_y1() function
+} // FILTER_FO_set_y1() 函数结束
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter denominator coefficients
+//! \brief     设置一阶滤波器的分母系数
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] a1      The filter coefficient value for z^(-1)
+//! \param[in] a1      z^(-1) 的滤波器系数值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -433,15 +425,15 @@ FILTER_FO_setDenCoeffs(FILTER_FO_Handle handle, const float32_t a1);
 
 //*****************************************************************************
 //
-//! \brief     Sets the initial conditions of the first-order filter
+//! \brief     设置一阶滤波器的初始条件
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] x1      The input value at time sample n=-1
+//! \param[in] x1      采样时刻 n=-1 的输入值
 //!
-//! \param[in] y1      The output value at time sample n=-1
+//! \param[in] y1      采样时刻 n=-1 的输出值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -450,15 +442,15 @@ FILTER_FO_setInitialConditions(FILTER_FO_Handle handle, const float32_t x1,
 
 //*****************************************************************************
 //
-//! \brief     Sets the first-order filter numerator coefficients
+//! \brief     设置一阶滤波器的分子系数
 //!
-//! \param[in] handle  The filter handle
+//! \param[in] handle  滤波器句柄
 //!
-//! \param[in] b0      The filter coefficient value for z^0
+//! \param[in] b0      z^0 的滤波器系数值
 //!
-//! \param[in] b1      The filter coefficient value for z^(-1)
+//! \param[in] b1      z^(-1) 的滤波器系数值
 //!
-//! \return    None
+//! \return    无
 //
 //*****************************************************************************
 extern void
@@ -467,14 +459,14 @@ FILTER_FO_setNumCoeffs(FILTER_FO_Handle handle, const float32_t b0,
 
 //*****************************************************************************
 //
-// Close the Doxygen group.
+// 关闭 Doxygen 分组。
 //! @}
 //
 //*****************************************************************************
 
 //*****************************************************************************
 //
-// Mark the end of the C bindings section for C++ compilers.
+// 标记 C++ 编译器下 C 语言绑定区的结束。
 //
 //*****************************************************************************
 #ifdef __cplusplus
