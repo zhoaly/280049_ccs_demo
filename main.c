@@ -80,6 +80,7 @@ void main(void)
 //
 // Timer1 中断服务程序 - 为红色任务释放信号量
 //
+//可以作为时基?
 __interrupt void timer1_ISR( void )
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
