@@ -1,5 +1,5 @@
 //
-// Included Files
+// 包含的文件
 //
 #include "driverlib.h"
 #include "device.h"
@@ -11,18 +11,18 @@
 #define BLUE        0xBAADF00D
 
 //
-// Function Prototypes
+// 函数原型
 //
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationMallocFailedHook( void );
 
 //
-// Timer1 ISR
+// Timer1 中断服务程序
 //
 __interrupt void timer1_ISR(void);
 
 //
-// Task Functions
+// 任务函数
 //
 void LED_TaskRed(void * pvParameters);
 void LED_TaskBlue(void * pvParameters);
@@ -31,47 +31,46 @@ static void redLedToggle(void);
 static void ledToggle(uint32_t led);
 
 //
-// Main
+// 主函数
 //
 void main(void)
 {
     //
-    // Initializes device clock and peripherals
+    // 初始化器件时钟和外设
     //
     Device_init();
 
     //
-    // Initializes PIE and clears PIE registers. Disables CPU interrupts.
+    // 初始化 PIE 并清除 PIE 寄存器，禁用 CPU 中断。
     //
     Interrupt_initModule();
 
     Device_initGPIO();
 
     //
-    // Disable all CPU interrupts and clear all CPU interrupt flags.
+    // 禁用所有 CPU 中断并清除所有 CPU 中断标志。
     //
     DINT;
     IER = 0x0000;
     IFR = 0x0000;
 
     //
-    // Initializes the PIE vector table with pointers to the shell Interrupt
-    // Service Routines (ISR).
+    // 使用指向默认中断服务程序 (ISR) 的指针初始化 PIE 向量表。
     //
     Interrupt_initVectorTable();
 
     //
-    // Set up CPUTimer1, LEDs.
+    // 配置 CPUTimer1 和 LED。
     //
     Board_init();
 
     //
-    // Configure FreeRTOS
+    // 配置 FreeRTOS
     //
     FreeRTOS_init();
 
     //
-    // Loop forever. This statement should never be reached.
+    // 无限循环。正常情况下永远不会执行到这里。
     //
     while(1)
     {
@@ -79,7 +78,7 @@ void main(void)
 }
 
 //
-// Timer1 ISR - Gives semaphore for RED task
+// Timer1 中断服务程序 - 为红色任务释放信号量
 //
 __interrupt void timer1_ISR( void )
 {
@@ -91,7 +90,7 @@ __interrupt void timer1_ISR( void )
 }
 
 //
-// LED_TaskRed - Takes Semaphore and then toggles the LED
+// LED_TaskRed - 获取信号量然后切换 LED
 //
 void LED_TaskRed(void * pvParameters)
 {
@@ -105,7 +104,7 @@ void LED_TaskRed(void * pvParameters)
 }
 
 //
-// LED_TaskBlue - Toggles LED and blocks for 250 ticks
+// LED_TaskBlue - 切换 LED 并阻塞 250 个节拍
 //
 void LED_TaskBlue(void * pvParameters)
 {
@@ -118,7 +117,7 @@ void LED_TaskBlue(void * pvParameters)
 }
 
 //
-// Helper functions
+// 辅助函数
 //
 static void blueLedToggle(void)
 {
@@ -150,35 +149,31 @@ static void ledToggle(uint32_t led)
 }
 
 //
-// vApplicationStackOverflowHook - Checks run time stack overflow
+// vApplicationStackOverflowHook - 检查运行时堆栈溢出
 //
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
     ( void ) pxTask;
 
-    /* Run time stack overflow checking is performed if
-    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
-    function is called if a stack overflow is detected. */
+    /* 当 configCHECK_FOR_STACK_OVERFLOW 定义为 1 或 2 时执行运行时堆栈溢出检查。
+    如果检测到堆栈溢出，将调用此钩子函数。 */
     taskDISABLE_INTERRUPTS();
     for( ;; );
 }
 
 //
-// vApplicationMallocFailedHook - Hook function for catching pvPortMalloc() failures
+// vApplicationMallocFailedHook - 捕获 pvPortMalloc() 失败的钩子函数
 //
 void vApplicationMallocFailedHook( void )
 {
-    /* vApplicationMallocFailedHook() will only be called if
-    configUSE_MALLOC_FAILED_HOOK is set to 1 in FreeRTOSConfig.h. It is a hook
-    function that will get called if a call to pvPortMalloc() fails.
-    pvPortMalloc() is called internally by the kernel whenever a task, queue,
-    timer or semaphore is created.  It is also called by various parts of the
-    demo application.  If heap_1.c or heap_2.c are used, then the size of the
-    heap available to pvPortMalloc() is defined by configTOTAL_HEAP_SIZE in
-    FreeRTOSConfig.h, and the xPortGetFreeHeapSize() API function can be used
-    to query the size of free heap space that remains (although it does not
-    provide information on how the remaining heap might be fragmented). */
+    /* 只有当 FreeRTOSConfig.h 中的 configUSE_MALLOC_FAILED_HOOK 设为 1 时，
+    才会调用 vApplicationMallocFailedHook()。该钩子函数会在调用
+    pvPortMalloc() 失败时被触发。内核在创建任务、队列、定时器或信号量时都会
+    内部调用 pvPortMalloc()，演示程序的各个部分也会调用它。如果使用 heap_1.c
+    或 heap_2.c，pvPortMalloc() 可用的堆大小由 FreeRTOSConfig.h 中的
+    configTOTAL_HEAP_SIZE 定义，可以使用 xPortGetFreeHeapSize() API 函数查询
+    剩余的堆空间大小（但该函数无法提供剩余堆空间碎片情况的信息）。 */
     taskDISABLE_INTERRUPTS();
     for( ;; );
 }
