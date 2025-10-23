@@ -35,16 +35,14 @@ static void ledToggle(uint32_t led);
 //
 void main(void)
 {
-    //
     // 初始化器件时钟和外设
-    //
     Device_init();
 
-    //
+
     // 初始化 PIE 并清除 PIE 寄存器，禁用 CPU 中断。
-    //
     Interrupt_initModule();
 
+    //初始化GPIO
     Device_initGPIO();
 
     //
@@ -59,21 +57,17 @@ void main(void)
     //
     Interrupt_initVectorTable();
 
-    //
+    //以下代码由syscfg生成
     // 配置 CPUTimer1 和 LED。
-    //
     Board_init();
-
-    //
     // 配置 FreeRTOS
-    //
     FreeRTOS_init();
 
-    //
-    // 无限循环。正常情况下永远不会执行到这里。
-    //
+    //以下为业务代码
+
     while(1)
-    {
+    {    // 正常情况下永远不会执行。
+
     }
 }
 
@@ -83,11 +77,7 @@ void main(void)
 //可以作为时基?
 __interrupt void timer1_ISR( void )
 {
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    xSemaphoreGiveFromISR( binarySem1Handle, &xHigherPriorityTaskWoken );
-
-    portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
 //
@@ -97,10 +87,9 @@ void LED_TaskRed(void * pvParameters)
 {
     for(;;)
     {
-        if(xSemaphoreTake( binarySem1Handle, portMAX_DELAY ) == pdTRUE)
-        {
-            ledToggle((uint32_t)pvParameters);
-        }
+
+        ledToggle((uint32_t)pvParameters);  
+        
     }
 }
 
