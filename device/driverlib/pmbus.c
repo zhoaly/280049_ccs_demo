@@ -671,7 +671,7 @@ PMBus_configModuleClockMode(uint32_t base, uint32_t moduleFrequency, uint32_t sy
     // Locals
     //
     uint32_t interruptState, clockDivider, calcModuleFreq;
-    const uint32_t fastPlusLow = 20000000U, fastPlusHigh = 25000000U;
+    // const uint32_t fastPlusLow = 20000000U, fastPlusHigh = 25000000U;
     const uint32_t fsmClkLimit = 10000000U;
 
     //
