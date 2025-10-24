@@ -57,6 +57,7 @@
                                     <listOptionValue value="${Free_RTOS}/portable/CCS/C2000_C28x"/>
                                     <listOptionValue value="${Free_RTOS}/include"/>
                                     <listOptionValue value="${CG_TOOL_ROOT}/include"/>
+                                    <listOptionValue value="C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CODE/include"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.DEFINE.1109585829" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${SYSCONFIG_TOOL_SYMBOLS}"/>
