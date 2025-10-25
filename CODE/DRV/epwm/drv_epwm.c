@@ -1,3 +1,8 @@
+/**
+ * @file drv_epwm.c
+ * @brief ePWM 驱动实现文件，完成互补 PWM 初始化、参数配置与状态查询。
+ */
+
 #include "drv_epwm.h"
 
 #include "device.h"
@@ -6,54 +11,68 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/pin_map.h"
 
-#define DRV_EPWM_DEFAULT_FREQUENCY_HZ      (20000UL)
-#define DRV_EPWM_DEFAULT_DUTY              (0.5f)
-#define DRV_EPWM_DEFAULT_RED_COUNT         (50U)
-#define DRV_EPWM_DEFAULT_FED_COUNT         (50U)
-#define DRV_EPWM_TBCLK_DIVIDER             (1UL)
-#define DRV_EPWM_TBCLK_HS_DIVIDER          (1UL)
+#define DRV_EPWM_DEFAULT_FREQUENCY_HZ      (20000UL) /**< 默认 PWM 开关频率，单位 Hz。 */
+#define DRV_EPWM_DEFAULT_DUTY              (0.5f)    /**< 默认占空比（0.0~1.0）。 */
+#define DRV_EPWM_DEFAULT_RED_COUNT         (50U)     /**< 默认上升沿死区计数值。 */
+#define DRV_EPWM_DEFAULT_FED_COUNT         (50U)     /**< 默认下降沿死区计数值。 */
+#define DRV_EPWM_TBCLK_DIVIDER             (1UL)     /**< ePWM TBCLK 分频系数。 */
+#define DRV_EPWM_TBCLK_HS_DIVIDER          (1UL)     /**< ePWM TBCLK 高速分频系数。 */
 
-static uint32_t s_frequencyHz = DRV_EPWM_DEFAULT_FREQUENCY_HZ;
+static uint32_t s_frequencyHz = DRV_EPWM_DEFAULT_FREQUENCY_HZ; /**< 当前 PWM 频率配置。 */
 static float s_dutyCycle[DRV_EPWM_CHANNEL_COUNT] =
 {
     DRV_EPWM_DEFAULT_DUTY,
     DRV_EPWM_DEFAULT_DUTY,
     DRV_EPWM_DEFAULT_DUTY
-};
-static uint16_t s_risingEdgeDelayCount = DRV_EPWM_DEFAULT_RED_COUNT;
-static uint16_t s_fallingEdgeDelayCount = DRV_EPWM_DEFAULT_FED_COUNT;
-static bool s_initialized = false;
+}; /**< 各通道占空比缓存，用于延迟生效与状态查询。 */
+static uint16_t s_risingEdgeDelayCount = DRV_EPWM_DEFAULT_RED_COUNT; /**< 死区上升沿计数。 */
+static uint16_t s_fallingEdgeDelayCount = DRV_EPWM_DEFAULT_FED_COUNT; /**< 死区下降沿计数。 */
+static bool s_initialized = false; /**< 驱动初始化标志。 */
 
 static const uint32_t s_epwmBase[DRV_EPWM_CHANNEL_COUNT] =
 {
     EPWM1_BASE,
     EPWM2_BASE,
     EPWM3_BASE
-};
+}; /**< ePWM 基地址表。 */
 
 static const uint32_t s_gpioPinConfigA[DRV_EPWM_CHANNEL_COUNT] =
 {
     GPIO_0_EPWM1A,
     GPIO_2_EPWM2A,
     GPIO_4_EPWM3A
-};
+}; /**< ePWM A 相引脚复用配置表。 */
 
 static const uint32_t s_gpioPinConfigB[DRV_EPWM_CHANNEL_COUNT] =
 {
     GPIO_1_EPWM1B,
     GPIO_3_EPWM2B,
     GPIO_5_EPWM3B
-};
+}; /**< ePWM B 相引脚复用配置表。 */
 
-static const uint32_t s_gpioPinA[DRV_EPWM_CHANNEL_COUNT] = { 0U, 2U, 4U };
-static const uint32_t s_gpioPinB[DRV_EPWM_CHANNEL_COUNT] = { 1U, 3U, 5U };
+static const uint32_t s_gpioPinA[DRV_EPWM_CHANNEL_COUNT] = { 0U, 2U, 4U }; /**< ePWM A 相 GPIO 序号表。 */
+static const uint32_t s_gpioPinB[DRV_EPWM_CHANNEL_COUNT] = { 1U, 3U, 5U }; /**< ePWM B 相 GPIO 序号表。 */
 
+/**
+ * @brief 计算当前系统时钟对应的 ePWM 时基时钟频率。
+ *
+ * @return 64 位 TBCLK 频率值。
+ */
 static inline uint64_t DRV_EPWM_getTimeBaseClock(void)
 {
     return ((uint64_t)DEVICE_SYSCLK_FREQ) /
            ((uint64_t)DRV_EPWM_TBCLK_DIVIDER * (uint64_t)DRV_EPWM_TBCLK_HS_DIVIDER);
 }
 
+/**
+ * @brief 根据目标频率计算时基周期值。
+ *
+ * @param[in]  frequencyHz 目标 PWM 频率，单位 Hz。
+ * @param[out] period      计算得到的 TBPRD 寄存器值。
+ *
+ * @retval true  计算成功并输出有效周期。
+ * @retval false 输入或运算参数非法。
+ */
 static bool DRV_EPWM_calculatePeriod(uint32_t frequencyHz, uint16_t *period)
 {
     uint64_t tbclk;
@@ -84,11 +103,26 @@ static bool DRV_EPWM_calculatePeriod(uint32_t frequencyHz, uint16_t *period)
     return true;
 }
 
+/**
+ * @brief 将占空比转换为计比较值。
+ *
+ * @param[in] dutyCycle 占空比（0.0~1.0）。
+ * @param[in] period    时基周期值。
+ *
+ * @return 对应的 CMPA 计比较值。
+ */
 static uint16_t DRV_EPWM_convertDutyToCompare(float dutyCycle, uint16_t period)
 {
     return (uint16_t)((float)period * dutyCycle);
 }
 
+/**
+ * @brief 对占空比参数进行上下限钳制。
+ *
+ * @param[in] dutyCycle 输入占空比值。
+ *
+ * @return 0.0~1.0 范围内的占空比。
+ */
 static float DRV_EPWM_clampDuty(float dutyCycle)
 {
     if(dutyCycle < 0.0f)
@@ -103,6 +137,13 @@ static float DRV_EPWM_clampDuty(float dutyCycle)
     return dutyCycle;
 }
 
+/**
+ * @brief 钳制死区计数值，确保满足硬件寄存器范围。
+ *
+ * @param[in] count 输入计数值。
+ *
+ * @return 合法的死区计数值。
+ */
 static uint16_t DRV_EPWM_clampDeadbandCount(uint16_t count)
 {
     if(count >= 0x4000U)
@@ -113,6 +154,11 @@ static uint16_t DRV_EPWM_clampDeadbandCount(uint16_t count)
     return count;
 }
 
+/**
+ * @brief 配置动作限定，生成互补 PWM 输出波形。
+ *
+ * @param[in] base ePWM 模块基地址。
+ */
 static void DRV_EPWM_configureActionQualifier(uint32_t base)
 {
     EPWM_setActionQualifierAction(base,
@@ -129,6 +175,11 @@ static void DRV_EPWM_configureActionQualifier(uint32_t base)
                                   EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);
 }
 
+/**
+ * @brief 配置 ePWM 死区模块，实现互补输出与死区延时。
+ *
+ * @param[in] base ePWM 模块基地址。
+ */
 static void DRV_EPWM_configureDeadBand(uint32_t base)
 {
     EPWM_setDeadBandDelayMode(base, EPWM_DB_RED, true);
@@ -141,6 +192,13 @@ static void DRV_EPWM_configureDeadBand(uint32_t base)
     EPWM_setFallingEdgeDelayCount(base, s_fallingEdgeDelayCount);
 }
 
+/**
+ * @brief 初始化时基模块，配置计数模式、周期与比较值。
+ *
+ * @param[in] base    ePWM 模块基地址。
+ * @param[in] period  时基周期值。
+ * @param[in] compare CMPA 初始比较值。
+ */
 static void DRV_EPWM_configureTimeBase(uint32_t base, uint16_t period, uint16_t compare)
 {
     EPWM_setClockPrescaler(base, EPWM_CLOCK_DIVIDER_1, EPWM_HSCLOCK_DIVIDER_1);
@@ -156,6 +214,9 @@ static void DRV_EPWM_configureTimeBase(uint32_t base, uint16_t period, uint16_t 
     EPWM_setCounterCompareValue(base, EPWM_COUNTER_COMPARE_A, compare);
 }
 
+/**
+ * @brief 配置 ePWM 输出相关 GPIO 引脚为互补推挽输出模式。
+ */
 static void DRV_EPWM_configureGPIO(void)
 {
     uint32_t index;
@@ -174,6 +235,9 @@ static void DRV_EPWM_configureGPIO(void)
     }
 }
 
+/**
+ * @brief 使能 ePWM 模块所需的外设时钟。
+ */
 static void DRV_EPWM_enableModuleClocks(void)
 {
     SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_EPWM1);
@@ -181,6 +245,11 @@ static void DRV_EPWM_enableModuleClocks(void)
     SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_EPWM3);
 }
 
+/**
+ * @brief 初始化 ePWM 驱动，配置三对互补 PWM 输出。
+ *
+ * 若在初始化前已调用频率、占空比或死区配置接口，则此函数会使用缓存参数进行初始化。
+ */
 void DRV_EPWM_init(void)
 {
     uint16_t period;
@@ -214,6 +283,14 @@ void DRV_EPWM_init(void)
     s_initialized = true;
 }
 
+/**
+ * @brief 设置所有通道的 PWM 开关频率。
+ *
+ * @param[in] frequencyHz 目标频率，单位 Hz。
+ *
+ * @retval true  配置成功。
+ * @retval false 参数非法或超出硬件可支持范围。
+ */
 bool DRV_EPWM_setFrequency(uint32_t frequencyHz)
 {
     uint16_t period;
@@ -246,6 +323,15 @@ bool DRV_EPWM_setFrequency(uint32_t frequencyHz)
     return true;
 }
 
+/**
+ * @brief 设置单通道 PWM 占空比。
+ *
+ * @param[in] channelIndex 通道索引（0~DRV_EPWM_CHANNEL_COUNT-1）。
+ * @param[in] dutyCycle    目标占空比，范围 0.0~1.0。
+ *
+ * @retval true  配置成功或已缓存待初始化。
+ * @retval false 参数非法。
+ */
 bool DRV_EPWM_setDutyCycle(uint32_t channelIndex, float dutyCycle)
 {
     uint16_t period;
@@ -278,6 +364,12 @@ bool DRV_EPWM_setDutyCycle(uint32_t channelIndex, float dutyCycle)
     return true;
 }
 
+/**
+ * @brief 设置互补输出的死区计数。
+ *
+ * @param[in] risingEdgeCount  上升沿死区计数。
+ * @param[in] fallingEdgeCount 下降沿死区计数。
+ */
 void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCount)
 {
     uint32_t index;
@@ -297,6 +389,11 @@ void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCo
     }
 }
 
+/**
+ * @brief 获取当前 ePWM 配置信息。
+ *
+ * @param[out] state 状态结构体指针。
+ */
 void DRV_EPWM_getState(DRV_EPWM_State *state)
 {
     uint32_t index;
