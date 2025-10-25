@@ -1,12 +1,14 @@
-//
-// 包含的文件
-//
+// sys include********************************************/
 #include "driverlib.h"
 #include "device.h"
 #include "FreeRTOS.h"
 #include "board.h"
 #include "c2000_freertos.h"
+// user include********************************************/
+#include "drv_epwm.h"
 
+
+// user d********************************************/
 #define RED         0xDEADBEAF
 #define BLUE        0xBAADF00D
 
@@ -20,15 +22,6 @@ void vApplicationMallocFailedHook( void );
 // Timer1 中断服务程序
 //
 __interrupt void timer1_ISR(void);
-
-//
-// 任务函数
-//
-void LED_TaskRed(void * pvParameters);
-void LED_TaskBlue(void * pvParameters);
-static void blueLedToggle(void);
-static void redLedToggle(void);
-static void ledToggle(uint32_t led);
 
 //
 // 主函数
@@ -57,17 +50,18 @@ void main(void)
     //
     Interrupt_initVectorTable();
 
-    //以下代码由syscfg生成
+    //以下代码由syscfg生成**************************************/
     // 配置 CPUTimer1 和 LED。
     Board_init();
     // 配置 FreeRTOS
     FreeRTOS_init();
 
-    //以下为业务代码
+    //以下为业务代码********************************************/
+    //驱动初始化************************************************/
+    DRV_EPWM_init();
 
     while(1)
     {    // 正常情况下永远不会执行。
-
     }
 }
 
@@ -80,63 +74,6 @@ __interrupt void timer1_ISR( void )
 
 }
 
-//
-// LED_TaskRed - 获取信号量然后切换 LED
-//
-void LED_TaskRed(void * pvParameters)
-{
-    for(;;)
-    {
-
-        ledToggle((uint32_t)pvParameters);  
-        
-    }
-}
-
-//
-// LED_TaskBlue - 切换 LED 并阻塞 250 个节拍
-//
-void LED_TaskBlue(void * pvParameters)
-{
-    for(;;)
-    {
-        ledToggle((uint32_t)pvParameters);
-        
-        vTaskDelay(250 / portTICK_PERIOD_MS);
-    }
-}
-
-//
-// 辅助函数
-//
-static void blueLedToggle(void)
-{
-    static uint32_t counter = 0;
-
-    counter++;
-    GPIO_writePin(myLED2_GPIO, counter & 1);
-}
-
-static void redLedToggle(void)
-{
-    static uint32_t counter = 0;
-
-    counter++;
-    GPIO_writePin(myLED1_GPIO, counter & 1);
-}
-
-static void ledToggle(uint32_t led)
-{
-    if(RED == led)
-    {
-        redLedToggle();
-    }
-    else
-    if(BLUE == led)
-    {
-        blueLedToggle();
-    } 
-}
 
 //
 // vApplicationStackOverflowHook - 检查运行时堆栈溢出
