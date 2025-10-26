@@ -7,17 +7,14 @@
 // user include********************************************/
 #include "drv_epwm.h"
 
-
-// user d********************************************/
-#define RED         0xDEADBEAF
-#define BLUE        0xBAADF00D
+DRV_EPWM_State epwmstate0 = {};
 
 //
 // 函数原型
 //
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationMallocFailedHook( void );
-
+void ePWMConfigurationTemplate(uint32_t base);
 //
 // Timer1 中断服务程序
 //
@@ -54,11 +51,20 @@ void main(void)
     // 配置 CPUTimer1 和 LED。
     Board_init();
     // 配置 FreeRTOS
-    FreeRTOS_init();
+    //FreeRTOS_init();
 
     //以下为业务代码********************************************/
     //驱动初始化************************************************/
-    DRV_EPWM_init();
+    // EALLOW;
+
+    //DRV_EPWM_init();
+    //ePWMConfigurationTemplate(EPWM1_BASE);
+    // EDIS;
+    
+    EINT;
+    ERTM;
+
+
 
     while(1)
     {    // 正常情况下永远不会执行。
@@ -71,7 +77,12 @@ void main(void)
 //可以作为时基?
 __interrupt void timer1_ISR( void )
 {
+    GPIO_togglePin(myLED1_GPIO);
+    GPIO_togglePin(myLED2_GPIO);
 
+
+    DRV_EPWM_getState(&epwmstate0);
+    
 }
 
 
@@ -105,4 +116,35 @@ void vApplicationMallocFailedHook( void )
     for( ;; );
 }
 
-
+void ePWMConfigurationTemplate(uint32_t base){
+    EPWM_setClockPrescaler(base, EPWM_CLOCK_DIVIDER_4, EPWM_HSCLOCK_DIVIDER_4);	
+    EPWM_setTimeBasePeriod(base, 2000);	
+    EPWM_setTimeBaseCounter(base, 0);	
+    EPWM_setTimeBaseCounterMode(base, EPWM_COUNTER_MODE_UP_DOWN);	
+    EPWM_disablePhaseShiftLoad(base);	
+    EPWM_setPhaseShift(base, 0);	
+    EPWM_setCounterCompareValue(base, EPWM_COUNTER_COMPARE_A, 500);	
+    EPWM_setCounterCompareShadowLoadMode(base, EPWM_COUNTER_COMPARE_A, EPWM_COMP_LOAD_ON_CNTR_ZERO);	
+    EPWM_setCounterCompareValue(base, EPWM_COUNTER_COMPARE_B, 1500);	
+    EPWM_setCounterCompareShadowLoadMode(base, EPWM_COUNTER_COMPARE_B, EPWM_COMP_LOAD_ON_CNTR_ZERO);	
+    EPWM_disableActionQualifierShadowLoadMode(base, EPWM_ACTION_QUALIFIER_A);	
+    EPWM_setActionQualifierShadowLoadMode(base, EPWM_ACTION_QUALIFIER_A, EPWM_AQ_LOAD_ON_CNTR_ZERO);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW, EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_PERIOD);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_HIGH, EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW, EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPB);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPB);	
+    EPWM_disableActionQualifierShadowLoadMode(base, EPWM_ACTION_QUALIFIER_B);	
+    EPWM_setActionQualifierShadowLoadMode(base, EPWM_ACTION_QUALIFIER_B, EPWM_AQ_LOAD_ON_CNTR_ZERO);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW, EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_PERIOD);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_NO_CHANGE, EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_HIGH, EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPB);	
+    EPWM_setActionQualifierAction(base, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW, EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPB);	
+    EPWM_setRisingEdgeDelayCountShadowLoadMode(base, EPWM_RED_LOAD_ON_CNTR_ZERO);	
+    EPWM_disableRisingEdgeDelayCountShadowLoadMode(base);	
+    EPWM_setFallingEdgeDelayCountShadowLoadMode(base, EPWM_FED_LOAD_ON_CNTR_ZERO);	
+    EPWM_disableFallingEdgeDelayCountShadowLoadMode(base);	
+}
