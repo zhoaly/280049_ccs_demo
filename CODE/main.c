@@ -15,6 +15,10 @@ DRV_EPWM_State epwmstate0 = {};
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationMallocFailedHook( void );
 void ePWMConfigurationTemplate(uint32_t base);
+
+
+void myTask0_func(void * pvParameters);
+
 //
 // Timer1 中断服务程序
 //
@@ -50,26 +54,42 @@ void main(void)
     //以下代码由syscfg生成**************************************/
     // 配置 CPUTimer1 和 LED。
     Board_init();
+
+    EALLOW;//外设配置必须在rtosinit前??
+    DRV_EPWM_init();
+    //ePWMConfigurationTemplate(EPWM1_BASE);
+    GPIO_writePin(myLED1_GPIO,0);
+    EDIS;
+
+
     // 配置 FreeRTOS
-    //FreeRTOS_init();
+    FreeRTOS_init();
 
     //以下为业务代码********************************************/
     //驱动初始化************************************************/
-    // EALLOW;
 
-    //DRV_EPWM_init();
-    //ePWMConfigurationTemplate(EPWM1_BASE);
-    // EDIS;
     
     EINT;
     ERTM;
 
 
-
+    
     while(1)
     {    // 正常情况下永远不会执行。
     }
 }
+
+void myTask0_func(void * pvParameters){
+    (void) pvParameters;
+    static int i;
+
+    while (1) {
+        i++;
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+
 
 //
 // Timer1 中断服务程序 - 为红色任务释放信号量
@@ -77,7 +97,7 @@ void main(void)
 //可以作为时基?
 __interrupt void timer1_ISR( void )
 {
-    GPIO_togglePin(myLED1_GPIO);
+    //GPIO_togglePin(myLED1_GPIO);
     GPIO_togglePin(myLED2_GPIO);
 
 

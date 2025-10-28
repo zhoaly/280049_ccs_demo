@@ -227,13 +227,13 @@ static void DRV_EPWM_configureGPIO(void)
         GPIO_setDirectionMode(s_gpioPinA[index], GPIO_DIR_MODE_OUT);
         GPIO_setPadConfig(s_gpioPinA[index], GPIO_PIN_TYPE_STD);
         GPIO_setQualificationMode(s_gpioPinA[index], GPIO_QUAL_SYNC);
-        GPIO_setAnalogMode(s_gpioPinA[index], GPIO_ANALOG_DISABLED);
+        //GPIO_setAnalogMode(s_gpioPinA[index], GPIO_ANALOG_DISABLED);
 
         GPIO_setPinConfig(s_gpioPinConfigB[index]);
         GPIO_setDirectionMode(s_gpioPinB[index], GPIO_DIR_MODE_OUT);
         GPIO_setPadConfig(s_gpioPinB[index], GPIO_PIN_TYPE_STD);
         GPIO_setQualificationMode(s_gpioPinB[index], GPIO_QUAL_SYNC);
-        GPIO_setAnalogMode(s_gpioPinB[index], GPIO_ANALOG_DISABLED);
+        //GPIO_setAnalogMode(s_gpioPinB[index], GPIO_ANALOG_DISABLED);
     }
 }
 

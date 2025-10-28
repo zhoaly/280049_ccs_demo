@@ -51,3 +51,6 @@ FREERTOS1.USE_MUTEXES             = true;
 FREERTOS1.USE_RECURSIVE_MUTEXES   = true;
 FREERTOS1.USE_COUNTING_SEMAPHORES = true;
 FREERTOS1.vTaskSuspend            = false;
+FREERTOS1.tasks.create(1);
+FREERTOS1.tasks[0].$name          = "myTask0";
+FREERTOS1.tasks[0].taskPointer    = "myTask0_func";
