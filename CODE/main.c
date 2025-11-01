@@ -6,6 +6,7 @@
 #include "c2000_freertos.h"
 // user include********************************************/
 #include "drv_epwm.h"
+#include "drv_spi.h"
 
 DRV_EPWM_State epwmstate0 = {};
 
@@ -56,6 +57,7 @@ void main(void)
     Board_init();
 
     EALLOW;//外设配置必须在rtosinit前??
+    DRV_SPI_init();
     DRV_EPWM_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
     GPIO_writePin(myLED1_GPIO,0);
