@@ -50,6 +50,7 @@
                                 <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH.1985942523" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.INCLUDE_PATH" valueType="includePath">
                                     <listOptionValue value="${SYSCONFIG_TOOL_INCLUDE_PATH}"/>
                                     <listOptionValue value="${COM_TI_C2000WARE_INCLUDE_PATH}"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/components/include"/>
                                     <listOptionValue value="${PROJECT_ROOT}"/>
                                     <listOptionValue value="${C2000WARE_ROOT}"/>
                                     <listOptionValue value="${PROJECT_ROOT}/device"/>
@@ -57,7 +58,7 @@
                                     <listOptionValue value="${Free_RTOS}/portable/CCS/C2000_C28x"/>
                                     <listOptionValue value="${Free_RTOS}/include"/>
                                     <listOptionValue value="${CG_TOOL_ROOT}/include"/>
-                                    <listOptionValue value="C:/Users/13281/workspace_ccstheia/freertos_demo_280049/CODE/include"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/CODE/include"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.DEFINE.1109585829" superClass="com.ti.ccstudio.buildDefinitions.C2000_22.6.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${SYSCONFIG_TOOL_SYMBOLS}"/>

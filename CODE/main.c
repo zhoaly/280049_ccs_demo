@@ -19,7 +19,7 @@ void ePWMConfigurationTemplate(uint32_t base);
 
 
 void myTask0_func(void * pvParameters);
-
+void APP_DRV8316_TASK(void * pvParameters);
 //
 // Timer1 中断服务程序
 //
@@ -60,7 +60,7 @@ void main(void)
     DRV_SPI_init();
     DRV_EPWM_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
-    GPIO_writePin(myLED1_GPIO,0);
+
     EDIS;
 
 
@@ -80,7 +80,10 @@ void main(void)
     {    // 正常情况下永远不会执行。
     }
 }
-
+void APP_DRV8316_TASK(void * pvParameters){
+    (void) pvParameters;
+    
+}
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
     static int i;

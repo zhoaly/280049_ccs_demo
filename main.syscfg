@@ -11,7 +11,6 @@
  */
 const led       = scripting.addModule("/driverlib/board_components/led", {}, false);
 const led1      = led.addInstance();
-const led2      = led.addInstance();
 const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1 = cputimer.addInstance();
 const FREERTOS  = scripting.addModule("/kernel/freertos_tool/FREERTOS", {}, false);
@@ -20,15 +19,10 @@ const FREERTOS1 = FREERTOS.addInstance();
 /**
  * Write custom configuration values to the imported modules.
  */
-led1.$name                  = "myLED1";
+led1.$name                  = "myLED2";
 led1.gpio.writeInitialValue = true;
 led1.gpio.initialValue      = 1;
-led1.gpio.gpioPin.$assign   = "GPIO10";
-
-led2.$name                  = "myLED2";
-led2.gpio.writeInitialValue = true;
-led2.gpio.initialValue      = 1;
-led2.gpio.gpioPin.$assign   = "GPIO6";
+led1.gpio.gpioPin.$assign   = "GPIO6";
 
 const divider1       = system.clockTree["CLBCLKDIV"];
 divider1.divideValue = 4;
@@ -51,6 +45,8 @@ FREERTOS1.USE_MUTEXES             = true;
 FREERTOS1.USE_RECURSIVE_MUTEXES   = true;
 FREERTOS1.USE_COUNTING_SEMAPHORES = true;
 FREERTOS1.vTaskSuspend            = false;
-FREERTOS1.tasks.create(1);
+FREERTOS1.tasks.create(2);
 FREERTOS1.tasks[0].$name          = "myTask0";
 FREERTOS1.tasks[0].taskPointer    = "myTask0_func";
+FREERTOS1.tasks[1].$name          = "APP_DRV8316";
+FREERTOS1.tasks[1].taskPointer    = "APP_DRV8316_TASK";
