@@ -7,6 +7,7 @@
 // user include********************************************/
 #include "drv_epwm.h"
 #include "drv_spi.h"
+#include "app_drv8316.h"
 
 DRV_EPWM_State epwmstate0 = {};
 
@@ -19,7 +20,6 @@ void ePWMConfigurationTemplate(uint32_t base);
 
 
 void myTask0_func(void * pvParameters);
-void APP_DRV8316_TASK(void * pvParameters);
 //
 // Timer1 中断服务程序
 //
@@ -59,6 +59,7 @@ void main(void)
     EALLOW;//外设配置必须在rtosinit前??
     DRV_SPI_init();
     DRV_EPWM_init();
+    APP_DRV8316_init(NULL);
     //ePWMConfigurationTemplate(EPWM1_BASE);
 
     EDIS;
@@ -79,10 +80,6 @@ void main(void)
     while(1)
     {    // 正常情况下永远不会执行。
     }
-}
-void APP_DRV8316_TASK(void * pvParameters){
-    (void) pvParameters;
-    
 }
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
