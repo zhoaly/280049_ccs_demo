@@ -372,7 +372,7 @@ bool DRV_EPWM_setDutyCycle(uint32_t channelIndex, float dutyCycle)
  * @param[in] risingEdgeCount  上升沿死区计数。
  * @param[in] fallingEdgeCount 下降沿死区计数。
  */
-void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCount)
+bool DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCount)
 {
     uint32_t index;
 
@@ -381,7 +381,7 @@ void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCo
 
     if(!s_initialized)
     {
-        return;
+        return false;
     }
 
     for(index = 0U; index < DRV_EPWM_CHANNEL_COUNT; index++)
@@ -389,6 +389,7 @@ void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCo
         EPWM_setRisingEdgeDelayCount(s_epwmBase[index], s_risingEdgeDelayCount);
         EPWM_setFallingEdgeDelayCount(s_epwmBase[index], s_fallingEdgeDelayCount);
     }
+    return true; 
 }
 
 /**

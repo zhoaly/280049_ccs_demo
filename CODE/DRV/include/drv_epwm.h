@@ -62,7 +62,7 @@ bool DRV_EPWM_setDutyCycle(uint32_t channelIndex, float dutyCycle);
  * @param[in] risingEdgeCount  上升沿死区计数。
  * @param[in] fallingEdgeCount 下降沿死区计数。
  */
-void DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCount);
+bool DRV_EPWM_setDeadbandCounts(uint16_t risingEdgeCount, uint16_t fallingEdgeCount);
 
 /**
  * @brief 读取当前 ePWM 状态。

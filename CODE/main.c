@@ -22,7 +22,7 @@ void ePWMConfigurationTemplate(uint32_t base);
 
 
 void myTask0_func(void * pvParameters);
-
+void FOC_Task_Func(void * pvParameters);
 //
 // Timer1 中断服务程序
 //
@@ -83,6 +83,8 @@ void main(void)
     {    // 正常情况下永远不会执行。
     }
 }
+
+
 
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
