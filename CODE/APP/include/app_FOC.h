@@ -1,6 +1,12 @@
 /**
  * @file app_FOC.h
- * @brief FOC控制逻辑实现
+ * @brief 提供磁场定向控制（FOC）应用层接口定义。
+ *
+ * 本头文件集中声明了 FOC 算法在应用层暴露的所有数据结构与函数接口，
+ * 包括三相电压、电流的抽象表示，dq/αβ 坐标系之间的变换结果缓存，
+ * 以及运行时所需的配置参数。调用者可通过这些接口完成电机控制系统的
+ * 任务调度、矢量变换、电压输出等操作，所有注释均采用专业术语进行详尽
+ * 说明，方便团队成员快速理解并维护该模块。
  */
 
 #ifndef APP_FOC_H
@@ -10,6 +16,9 @@
 
 #include <stdbool.h>
 
+/**
+ * @brief 近似值 π，用于角度换算。可根据精度需求在实现中替换为更高精度常量。
+ */
 #define PI 3.14159f
 
 /**
@@ -77,20 +86,130 @@ typedef struct
     float                 electricalAngle;   /**< 当前电角度，单位 rad，需在调用变换函数前更新。 */
 } FOC_Handle;
 
+/**
+ * @brief FOC 任务入口函数，适用于 FreeRTOS 任务创建。
+ *
+ * 该函数将自动完成句柄初始化、底层外设配置及循环调度。若启动参数
+ * 为空，则默认使用模块内部的静态句柄。
+ *
+ * @param[in] pvParameters 任务创建时传入的句柄指针，若为 NULL 则使用内部静态句柄。
+ */
 void FOC_Task_Func(void *pvParameters);
+
+/**
+ * @brief 初始化 FOC 句柄并清空所有运行态缓存。
+ *
+ * 建议在系统上电或复位后立即调用，确保句柄处于确定状态。
+ *
+ * @param[in,out] handle 需初始化的句柄指针，不能为空。
+ */
 void FOC_HandleInit(FOC_Handle *handle);
+
+/**
+ * @brief 设置自定义配置。
+ *
+ * @param[in,out] handle FOC 句柄指针，不能为空。
+ * @param[in]     config 待应用的配置结构体指针，需提前完成字段填充及校验。
+ *
+ * @retval true  配置通过合法性检查并被应用。
+ * @retval false 参数指针为空或配置项超出允许范围。
+ */
 bool FOC_Configure(FOC_Handle *handle, const FOC_Config *config);
+
+/**
+ * @brief 获取一份安全的默认配置。
+ *
+ * @return 默认配置结构体，调用者可按需修改后重新写回句柄。
+ */
 FOC_Config FOC_GetDefaultConfig(void);
+
+/**
+ * @brief 设置电角度零点校准值。
+ *
+ * @param[in,out] handle    FOC 句柄指针，不能为空。
+ * @param[in]     zeroAngle 校准值，单位 rad。
+ *
+ * @retval true  设置成功。
+ * @retval false 参数非法（指针为空或角度非有限值）。
+ */
 bool FOC_SetZeroElectricAngle(FOC_Handle *handle, float zeroAngle);
+
+/**
+ * @brief 将三相电压指令转换为 PWM 占空比并写入驱动层。
+ *
+ * @param[in,out] handle FOC 句柄指针，需事先完成电压指令填充及供电电压配置。
+ */
 void FOC_SetPhaseVoltage(FOC_Handle *handle);
+
+/**
+ * @brief 执行 Clarke 变换并刷新 αβ 电流缓存。
+ *
+ * @param[in,out] handle FOC 句柄指针，需提前更新三相电流测量值。
+ */
 void FOC_ClarkeTransform(FOC_Handle *handle);
+
+/**
+ * @brief 执行 Park 变换并刷新 dq 电流缓存。
+ *
+ * @param[in,out] handle FOC 句柄指针，需提前完成 αβ 电流及电角度更新。
+ */
 void FOC_ParkTransform(FOC_Handle *handle);
+
+/**
+ * @brief 执行逆 Clarke 变换，重建三相量。
+ *
+ * @param[in,out] handle FOC 句柄指针，将依据 αβ 电压指令生成三相电压。
+ */
 void FOC_InverseClarkeTransform(FOC_Handle *handle);
+
+/**
+ * @brief 执行逆 Park 变换，将 dq 量回到 αβ 坐标系。
+ *
+ * @param[in,out] handle FOC 句柄指针，需要提供 dq 电压指令及电角度。
+ */
 void FOC_InverseParkTransform(FOC_Handle *handle);
+
+/**
+ * @brief 根据 dq 指令矢量计算 αβ 电压并缓存，通常配合 SVPWM 使用。
+ *
+ * @param[in,out] handle FOC 句柄指针，需设置 dq 电压与电角度。
+ */
 void FOC_SetAlphaBetaVoltage(FOC_Handle *handle);
+
+/**
+ * @brief 获取最新的 αβ 电压矢量指令。
+ *
+ * @param[in] handle FOC 句柄指针，不能为空。
+ *
+ * @return 指向内部 αβ 电压缓存的常量指针，若句柄为空则返回 NULL。
+ */
 const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle);
+
+/**
+ * @brief 获取最新的 αβ 电流测量值。
+ *
+ * @param[in] handle FOC 句柄指针，不能为空。
+ *
+ * @return 指向内部 αβ 电流缓存的常量指针，若句柄为空则返回 NULL。
+ */
 const FOC_AlphaBeta *FOC_GetAlphaBetaCurrent(const FOC_Handle *handle);
+
+/**
+ * @brief 获取最近一次写入的 dq 电压矢量。
+ *
+ * @param[in] handle FOC 句柄指针，不能为空。
+ *
+ * @return 指向内部 dq 电压缓存的常量指针，若句柄为空则返回 NULL。
+ */
 const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle);
+
+/**
+ * @brief 获取最新的 dq 电流测量值。
+ *
+ * @param[in] handle FOC 句柄指针，不能为空。
+ *
+ * @return 指向内部 dq 电流缓存的常量指针，若句柄为空则返回 NULL。
+ */
 const FOC_DQ *FOC_GetDQCurrent(const FOC_Handle *handle);
 
 #endif /* APP_FOC_H */
