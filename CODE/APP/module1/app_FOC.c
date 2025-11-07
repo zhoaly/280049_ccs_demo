@@ -20,6 +20,8 @@
 #define     DEFAULT_FOC_PWM_FREQUENCY      (10000U)
 
 #define     VOLTAGE_POWER_SUPPLY           (12.0f)
+#define     SQRT3_F                        (1.73205080757f)
+#define     INV_SQRT3_F                    (0.57735026919f)
 
 //FOC主函数
 void FOC_Task_Func(void * pvParameters){
@@ -88,6 +90,69 @@ void FOC_SetPhaseVoltage(float Ua, float Ub, float Uc) {
     DRV_EPWM_setDutyCycle(1,duty_b);
     DRV_EPWM_setDutyCycle(2,duty_c);
 
+}
+
+
+void FOC_ClarkeTransform(float Ia, float Ib, float Ic, float *Ialpha, float *Ibeta) {
+    (void)Ic; // 三相对称系统中Ic可以由Ia和Ib推导，此处保留参数以兼容接口
+
+    if (Ialpha != NULL) {
+        *Ialpha = Ia;
+    }
+    if (Ibeta != NULL) {
+        *Ibeta = (Ia + 2.0f * Ib) * INV_SQRT3_F;
+    }
+}
+
+
+void FOC_ParkTransform(float Ialpha, float Ibeta, float angle_el, float *Id, float *Iq) {
+    float sin_angle;
+    float cos_angle;
+
+    sin_angle = sinf(angle_el);
+    cos_angle = cosf(angle_el);
+
+    if (Id != NULL) {
+        *Id = Ialpha * cos_angle + Ibeta * sin_angle;
+    }
+    if (Iq != NULL) {
+        *Iq = -Ialpha * sin_angle + Ibeta * cos_angle;
+    }
+}
+
+
+void FOC_InverseClarkeTransform(float Ialpha, float Ibeta, float *Ia, float *Ib, float *Ic) {
+    float ib_temp;
+    float ic_temp;
+
+    ib_temp = (-Ialpha + SQRT3_F * Ibeta) * 0.5f;
+    ic_temp = (-Ialpha - SQRT3_F * Ibeta) * 0.5f;
+
+    if (Ia != NULL) {
+        *Ia = Ialpha;
+    }
+    if (Ib != NULL) {
+        *Ib = ib_temp;
+    }
+    if (Ic != NULL) {
+        *Ic = ic_temp;
+    }
+}
+
+
+void FOC_InverseParkTransform(float Id, float Iq, float angle_el, float *Ialpha, float *Ibeta) {
+    float sin_angle;
+    float cos_angle;
+
+    sin_angle = sinf(angle_el);
+    cos_angle = cosf(angle_el);
+
+    if (Ialpha != NULL) {
+        *Ialpha = Id * cos_angle - Iq * sin_angle;
+    }
+    if (Ibeta != NULL) {
+        *Ibeta = Id * sin_angle + Iq * cos_angle;
+    }
 }
 
 

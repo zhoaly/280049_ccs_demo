@@ -16,6 +16,10 @@
 
 void FOC_Task_Func(void * pvParameters);
 void FOC_SetPhaseVoltage(float Ua, float Ub, float Uc) ;
+void FOC_ClarkeTransform(float Ia, float Ib, float Ic, float *Ialpha, float *Ibeta);
+void FOC_ParkTransform(float Ialpha, float Ibeta, float angle_el, float *Id, float *Iq);
+void FOC_InverseClarkeTransform(float Ialpha, float Ibeta, float *Ia, float *Ib, float *Ic);
+void FOC_InverseParkTransform(float Id, float Iq, float angle_el, float *Ialpha, float *Ibeta);
 
 
 static bool FOC_init(void);
