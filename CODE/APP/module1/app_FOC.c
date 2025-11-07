@@ -219,6 +219,19 @@ void FOC_ParkTransform(FOC_Handle *handle)
 {
     float sin_angle;
     float cos_angle;
+    const FOC_AlphaBeta *source;
+
+    if(handle == NULL)
+    {
+        return;
+    }
+
+    source = (input != NULL) ? input : &handle->currentAlphaBeta;
+
+    if(input != NULL)
+    {
+        handle->currentAlphaBeta = *input;
+    }
 
     if(handle == NULL)
     {
@@ -240,6 +253,7 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle)
 {
     float ib_temp;
     float ic_temp;
+    const FOC_AlphaBeta *source;
 
     if(handle == NULL)
     {
