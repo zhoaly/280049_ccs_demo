@@ -59,24 +59,7 @@ static float FOC_clamp(float value, float minValue, float maxValue)
     return value;
 }
 
-/**
- * @brief 内部初始化例程，完成 PWM 配置等底层准备工作。
- *
- * @param[in,out] handle FOC 句柄指针，需提供有效配置并接收初始化后的状态。
- *
- * @retval true  初始化成功。
- * @retval false 参数非法或底层外设配置失败。
- */
-static bool FOC_init(FOC_Handle *handle);
 
-/**
- * @brief 将角度归一化至 [0, 2π) 区间，避免累计误差导致的越界。
- *
- * @param[in] angle 原始角度，单位 rad，可正可负。
- *
- * @return 归一化后的角度值，范围 [0, 2π)。
- */
-static float FOC_normalizeAngle(float angle);
 
 /**
  * @brief FOC 主任务入口。
@@ -86,7 +69,7 @@ static float FOC_normalizeAngle(float angle);
 void FOC_Task_Func(void * pvParameters){
     FOC_Handle *handle = (FOC_Handle *)pvParameters;
 
-    if(handle == NULL)
+    if(handle == NULL)//null的异常处理
     {
         handle = &s_focHandle;
     }

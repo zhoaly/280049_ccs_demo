@@ -212,4 +212,25 @@ const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle);
  */
 const FOC_DQ *FOC_GetDQCurrent(const FOC_Handle *handle);
 
+
+
+/**
+ * @brief 内部初始化例程，完成 PWM 配置等底层准备工作。
+ *
+ * @param[in,out] handle FOC 句柄指针，需提供有效配置并接收初始化后的状态。
+ *
+ * @retval true  初始化成功。
+ * @retval false 参数非法或底层外设配置失败。
+ */
+static bool FOC_init(FOC_Handle *handle);
+
+/**
+ * @brief 将角度归一化至 [0, 2π) 区间，避免累计误差导致的越界。
+ *
+ * @param[in] angle 原始角度，单位 rad，可正可负。
+ *
+ * @return 归一化后的角度值，范围 [0, 2π)。
+ */
+static float FOC_normalizeAngle(float angle);
+
 #endif /* APP_FOC_H */
