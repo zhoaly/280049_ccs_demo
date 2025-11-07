@@ -7,6 +7,7 @@
 #define APP_FOC_H
 
 #include <stdint.h>
+
 #include <stdbool.h>
 
 #define PI 3.14159f
