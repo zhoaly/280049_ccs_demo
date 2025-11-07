@@ -103,6 +103,10 @@ void FOC_HandleInit(FOC_Handle *handle)
     handle->voltageDQ.q       = 0.0f;
     handle->currentDQ.d       = 0.0f;
     handle->currentDQ.q       = 0.0f;
+<<<<<<< HEAD
+=======
+    handle->electricalAngle   = 0.0f;
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 }
 
 static bool FOC_init(FOC_Handle *handle)
@@ -164,17 +168,26 @@ static float FOC_normalizeAngle(float angle)
 /**
  * @brief 根据句柄中的供电参数设置三相电压并输出 PWM 占空比。
  */
+<<<<<<< HEAD
 void FOC_SetPhaseVoltage(FOC_Handle *handle, const FOC_PhaseVoltage *voltage)
+=======
+void FOC_SetPhaseVoltage(FOC_Handle *handle)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 {
     float dutyA;
     float dutyB;
     float dutyC;
 
+<<<<<<< HEAD
     if((handle == NULL) || (voltage == NULL))
+=======
+    if(handle == NULL)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
     {
         return;
     }
 
+<<<<<<< HEAD
     handle->phaseVoltage = *voltage;
 
     if(handle->config.voltagePowerSupply <= 0.0f)
@@ -189,6 +202,20 @@ void FOC_SetPhaseVoltage(FOC_Handle *handle, const FOC_PhaseVoltage *voltage)
     dutyB = FOC_clamp(voltage->Ub / handle->config.voltagePowerSupply, 0.0f, 1.0f);
     dutyC = FOC_clamp(voltage->Uc / handle->config.voltagePowerSupply, 0.0f, 1.0f);
 
+=======
+    if(handle->config.voltagePowerSupply <= 0.0f)
+    {
+        return;
+    }
+
+    /*
+     * 计算占空比并限制在 [0, 1] 范围内，防止非法值损坏驱动器件。
+     */
+    dutyA = FOC_clamp(handle->phaseVoltage.Ua / handle->config.voltagePowerSupply, 0.0f, 1.0f);
+    dutyB = FOC_clamp(handle->phaseVoltage.Ub / handle->config.voltagePowerSupply, 0.0f, 1.0f);
+    dutyC = FOC_clamp(handle->phaseVoltage.Uc / handle->config.voltagePowerSupply, 0.0f, 1.0f);
+
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
     (void)DRV_EPWM_setDutyCycle(0U, dutyA);
     (void)DRV_EPWM_setDutyCycle(1U, dutyB);
     (void)DRV_EPWM_setDutyCycle(2U, dutyC);
@@ -198,11 +225,17 @@ void FOC_SetPhaseVoltage(FOC_Handle *handle, const FOC_PhaseVoltage *voltage)
 /**
  * @brief 基于句柄保存的上下文执行 Clarke 变换。
  */
+<<<<<<< HEAD
 void FOC_ClarkeTransform(FOC_Handle *handle,
                          const FOC_ThreePhaseCurrent *current,
                          FOC_AlphaBeta *output)
 {
     if((handle == NULL) || (current == NULL))
+=======
+void FOC_ClarkeTransform(FOC_Handle *handle)
+{
+    if(handle == NULL)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
     {
         return;
     }
@@ -210,6 +243,7 @@ void FOC_ClarkeTransform(FOC_Handle *handle,
     /*
      * 在三相对称系统中，Clarke 变换使用两相电流即可描述矢量。
      */
+<<<<<<< HEAD
     handle->phaseCurrent = *current;
     handle->currentAlphaBeta.alpha = current->Ia;
     handle->currentAlphaBeta.beta  = (current->Ia + 2.0f * current->Ib) * INV_SQRT3_F;
@@ -218,16 +252,24 @@ void FOC_ClarkeTransform(FOC_Handle *handle,
     {
         *output = handle->currentAlphaBeta;
     }
+=======
+    handle->currentAlphaBeta.alpha = handle->phaseCurrent.Ia;
+    handle->currentAlphaBeta.beta  = (handle->phaseCurrent.Ia + 2.0f * handle->phaseCurrent.Ib) * INV_SQRT3_F;
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 }
 
 
 /**
  * @brief 基于句柄保存的 αβ 电流执行 Park 变换，结果写回句柄。
  */
+<<<<<<< HEAD
 void FOC_ParkTransform(FOC_Handle *handle,
                        const FOC_AlphaBeta *input,
                        float angle_el,
                        FOC_DQ *output)
+=======
+void FOC_ParkTransform(FOC_Handle *handle)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 {
     float sin_angle;
     float cos_angle;
@@ -245,9 +287,12 @@ void FOC_ParkTransform(FOC_Handle *handle,
         handle->currentAlphaBeta = *input;
     }
 
-    sin_angle = sinf(angle_el);
-    cos_angle = cosf(angle_el);
+    if(handle == NULL)
+    {
+        return;
+    }
 
+<<<<<<< HEAD
     handle->currentDQ.d = source->alpha * cos_angle + source->beta * sin_angle;
     handle->currentDQ.q = -source->alpha * sin_angle + source->beta * cos_angle;
 
@@ -255,15 +300,26 @@ void FOC_ParkTransform(FOC_Handle *handle,
     {
         *output = handle->currentDQ;
     }
+=======
+    sin_angle = sinf(handle->electricalAngle);
+    cos_angle = cosf(handle->electricalAngle);
+
+    handle->currentDQ.d = handle->currentAlphaBeta.alpha * cos_angle + handle->currentAlphaBeta.beta * sin_angle;
+    handle->currentDQ.q = -handle->currentAlphaBeta.alpha * sin_angle + handle->currentAlphaBeta.beta * cos_angle;
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 }
 
 
 /**
  * @brief 执行逆 Clarke 变换，并将结果回写至句柄缓存。
  */
+<<<<<<< HEAD
 void FOC_InverseClarkeTransform(FOC_Handle *handle,
                                 const FOC_AlphaBeta *input,
                                 FOC_ThreePhaseCurrent *output)
+=======
+void FOC_InverseClarkeTransform(FOC_Handle *handle)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 {
     float ib_temp;
     float ic_temp;
@@ -274,6 +330,7 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle,
         return;
     }
 
+<<<<<<< HEAD
     source = (input != NULL) ? input : &handle->voltageAlphaBeta;
 
     if(input != NULL)
@@ -292,16 +349,28 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle,
     {
         *output = handle->phaseCurrent;
     }
+=======
+    ib_temp = (-handle->voltageAlphaBeta.alpha + SQRT3_F * handle->voltageAlphaBeta.beta) * 0.5f;
+    ic_temp = (-handle->voltageAlphaBeta.alpha - SQRT3_F * handle->voltageAlphaBeta.beta) * 0.5f;
+
+    handle->phaseCurrent.Ia = handle->voltageAlphaBeta.alpha;
+    handle->phaseCurrent.Ib = ib_temp;
+    handle->phaseCurrent.Ic = ic_temp;
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 }
 
 
 /**
  * @brief 执行逆 Park 变换，将 dq 量转换为 αβ 量。
  */
+<<<<<<< HEAD
 void FOC_InverseParkTransform(FOC_Handle *handle,
                               const FOC_DQ *input,
                               float angle_el,
                               FOC_AlphaBeta *output)
+=======
+void FOC_InverseParkTransform(FOC_Handle *handle)
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
 {
     float sin_angle;
     float cos_angle;
@@ -319,6 +388,7 @@ void FOC_InverseParkTransform(FOC_Handle *handle,
         handle->voltageDQ = *input;
     }
 
+<<<<<<< HEAD
     sin_angle = sinf(angle_el);
     cos_angle = cosf(angle_el);
 
@@ -328,11 +398,52 @@ void FOC_InverseParkTransform(FOC_Handle *handle,
     if(output != NULL)
     {
         *output = handle->voltageAlphaBeta;
+=======
+    if(handle == NULL)
+    {
+        return;
+    }
+
+    sin_angle = sinf(handle->electricalAngle);
+    cos_angle = cosf(handle->electricalAngle);
+
+    handle->voltageAlphaBeta.alpha = handle->voltageDQ.d * cos_angle - handle->voltageDQ.q * sin_angle;
+    handle->voltageAlphaBeta.beta  = handle->voltageDQ.d * sin_angle + handle->voltageDQ.q * cos_angle;
+}
+
+
+/**
+ * @brief 综合句柄配置执行 dq->αβ 变换，并缓存 αβ 电压指令。
+ */
+void FOC_SetAlphaBetaVoltage(FOC_Handle *handle)
+{
+    float normalizedAngle;
+
+    if(handle == NULL)
+    {
+        return;
+    }
+
+    normalizedAngle = FOC_normalizeAngle(handle->electricalAngle + handle->config.zeroElectricAngle);
+
+    /*
+     * 采用标准逆帕克变换，同时缓存结果用于后续阶段的矢量调制或监控。
+     */
+    {
+        float sinAngle = sinf(normalizedAngle);
+        float cosAngle = cosf(normalizedAngle);
+
+        handle->voltageAlphaBeta.alpha =
+            handle->voltageDQ.d * cosAngle - handle->voltageDQ.q * sinAngle;
+        handle->voltageAlphaBeta.beta  =
+            handle->voltageDQ.d * sinAngle + handle->voltageDQ.q * cosAngle;
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
     }
 }
 
 
 /**
+<<<<<<< HEAD
  * @brief 综合句柄配置执行 dq->αβ 变换，并缓存 αβ 电压指令。
  */
 void FOC_SetAlphaBetaVoltage(FOC_Handle *handle, const FOC_DQ *voltageDQ, float angle_el)
@@ -379,6 +490,23 @@ bool FOC_Configure(FOC_Handle *handle, const FOC_Config *config)
         return false;
     }
 
+=======
+ * @brief 设置 FOC 配置参数。
+ *
+ * @param[in,out] handle FOC 句柄指针，不能为空。
+ * @param[in]     config 待应用的配置指针。
+ *
+ * @retval true  配置生效。
+ * @retval false 参数非法，未更新配置。
+ */
+bool FOC_Configure(FOC_Handle *handle, const FOC_Config *config)
+{
+    if((handle == NULL) || (config == NULL))
+    {
+        return false;
+    }
+
+>>>>>>> ef899f9e4ebecb20be8ed31137a7a6cc4c9b9d42
     if((config->defaultFrequency == 0U) ||
        (config->voltagePowerSupply <= 0.0f) ||
        (config->defaultDuty < 0.0f) ||
