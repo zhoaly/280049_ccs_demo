@@ -73,6 +73,7 @@ typedef struct
     FOC_AlphaBeta         currentAlphaBeta;  /**< αβ 坐标系的电流值。 */
     FOC_DQ                voltageDQ;         /**< dq 坐标系的电压指令。 */
     FOC_DQ                currentDQ;         /**< dq 坐标系的电流值。 */
+    float                 electricalAngle;   /**< 当前电角度，单位 rad，需在调用变换函数前更新。 */
 } FOC_Handle;
 
 void FOC_Task_Func(void *pvParameters);
@@ -80,22 +81,12 @@ void FOC_HandleInit(FOC_Handle *handle);
 bool FOC_Configure(FOC_Handle *handle, const FOC_Config *config);
 FOC_Config FOC_GetDefaultConfig(void);
 bool FOC_SetZeroElectricAngle(FOC_Handle *handle, float zeroAngle);
-void FOC_SetPhaseVoltage(FOC_Handle *handle, const FOC_PhaseVoltage *voltage);
-void FOC_ClarkeTransform(FOC_Handle *handle,
-                         const FOC_ThreePhaseCurrent *current,
-                         FOC_AlphaBeta *output);
-void FOC_ParkTransform(FOC_Handle *handle,
-                       const FOC_AlphaBeta *input,
-                       float angle_el,
-                       FOC_DQ *output);
-void FOC_InverseClarkeTransform(FOC_Handle *handle,
-                                const FOC_AlphaBeta *input,
-                                FOC_ThreePhaseCurrent *output);
-void FOC_InverseParkTransform(FOC_Handle *handle,
-                              const FOC_DQ *input,
-                              float angle_el,
-                              FOC_AlphaBeta *output);
-void FOC_SetAlphaBetaVoltage(FOC_Handle *handle, const FOC_DQ *voltageDQ, float angle_el);
+void FOC_SetPhaseVoltage(FOC_Handle *handle);
+void FOC_ClarkeTransform(FOC_Handle *handle);
+void FOC_ParkTransform(FOC_Handle *handle);
+void FOC_InverseClarkeTransform(FOC_Handle *handle);
+void FOC_InverseParkTransform(FOC_Handle *handle);
+void FOC_SetAlphaBetaVoltage(FOC_Handle *handle);
 const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle);
 const FOC_AlphaBeta *FOC_GetAlphaBetaCurrent(const FOC_Handle *handle);
 const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle);
