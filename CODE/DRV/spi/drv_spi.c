@@ -46,17 +46,17 @@ static void DRV_SPI_configureFunctionalPins(void)
      * 将 SPI 功能信号映射到器件预定义的引脚，并配置其输入同步方式
      * 与上拉属性，确保高速 SPI 信号的完整性与抗干扰能力。
      */
-    GPIO_setPinConfig(DEVICE_GPIO_CFG_SPICLKA);
-    GPIO_setPinConfig(DEVICE_GPIO_CFG_SPISIMOA);
-    GPIO_setPinConfig(DEVICE_GPIO_CFG_SPISOMIA);
+    // GPIO_setPinConfig(DEVICE_GPIO_CFG_SPICLKA);
+    // GPIO_setPinConfig(DEVICE_GPIO_CFG_SPISIMOA);
+    // GPIO_setPinConfig(DEVICE_GPIO_CFG_SPISOMIA);
 
-    GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPICLKA, GPIO_QUAL_ASYNC);
-    GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPISIMOA, GPIO_QUAL_ASYNC);
-    GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPISOMIA, GPIO_QUAL_ASYNC);
+    // GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPICLKA, GPIO_QUAL_ASYNC);
+    // GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPISIMOA, GPIO_QUAL_ASYNC);
+    // GPIO_setQualificationMode(DEVICE_GPIO_PIN_SPISOMIA, GPIO_QUAL_ASYNC);
 
-    GPIO_setPadConfig(DEVICE_GPIO_PIN_SPICLKA, GPIO_PIN_TYPE_PULLUP);
-    GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISIMOA, GPIO_PIN_TYPE_PULLUP);
-    GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISOMIA, GPIO_PIN_TYPE_PULLUP);
+//     GPIO_setPadConfig(DEVICE_GPIO_PIN_SPICLKA, GPIO_PIN_TYPE_PULLUP);
+//     GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISIMOA, GPIO_PIN_TYPE_PULLUP);
+//     GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISOMIA, GPIO_PIN_TYPE_PULLUP);
 }
 
 static void DRV_SPI_configureChipSelectPin(uint32_t gpio)

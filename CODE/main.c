@@ -97,7 +97,7 @@ void myTask0_func(void * pvParameters){
 
     while (1) {
         i++;
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdTICKS_TO_MS(1000));
         GPIO_togglePin(myLED1_GPIO);
     }
 }
