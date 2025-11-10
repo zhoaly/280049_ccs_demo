@@ -60,10 +60,15 @@ void main(void)
     Board_init();
 
     EALLOW;//外设配置必须在rtosinit前??
-    DRV_SPI_init();
+    //DRV_SPI_init();
     DRV_EPWM_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
-    GPIO_writePin(myLED1_GPIO,0);
+    //GPIO_writePin(myLED1_GPIO,1);
+
+    GPIO_writePin(FOC_DRV_EN1,1);//使能
+    GPIO_writePin(FOC_DRV_EN2,1);
+    GPIO_writePin(FOC_DRV_EN3,1);
+    
     EDIS;
 
 
@@ -93,6 +98,7 @@ void myTask0_func(void * pvParameters){
     while (1) {
         i++;
         vTaskDelay(pdMS_TO_TICKS(1000));
+        GPIO_togglePin(myLED1_GPIO);
     }
 }
 

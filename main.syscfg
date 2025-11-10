@@ -14,6 +14,10 @@ const led1      = led.addInstance();
 const led2      = led.addInstance();
 const cputimer  = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1 = cputimer.addInstance();
+const gpio      = scripting.addModule("/driverlib/gpio.js", {}, false);
+const gpio3     = gpio.addInstance();
+const gpio4     = gpio.addInstance();
+const gpio5     = gpio.addInstance();
 const FREERTOS  = scripting.addModule("/kernel/freertos_tool/FREERTOS", {}, false);
 const FREERTOS1 = FREERTOS.addInstance();
 
@@ -44,6 +48,18 @@ cputimer1.startTimer                = true;
 cputimer1.timerPeriod               = 10000000;
 cputimer1.timerInt.interruptHandler = "timer1_ISR";
 cputimer1.timerInt.enableInterrupt  = true;
+
+gpio3.$name           = "FOC_DRV_EN1";
+gpio3.direction       = "GPIO_DIR_MODE_OUT";
+gpio3.gpioPin.$assign = "GPIO23_VSW";
+
+gpio4.$name           = "FOC_DRV_EN2";
+gpio4.direction       = "GPIO_DIR_MODE_OUT";
+gpio4.gpioPin.$assign = "GPIO7";
+
+gpio5.$name           = "FOC_DRV_EN3";
+gpio5.direction       = "GPIO_DIR_MODE_OUT";
+gpio5.gpioPin.$assign = "GPIO9";
 
 FREERTOS1.$name                   = "myFREERTOS0";
 FREERTOS1.MINIMAL_STACK_SIZE      = 256;
