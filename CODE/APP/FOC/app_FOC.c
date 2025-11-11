@@ -110,17 +110,10 @@ void FOC_HandleInit(FOC_Handle *handle)
     handle->phaseVoltage.Ua   = 0.0f;
     handle->phaseVoltage.Ub   = 0.0f;
     handle->phaseVoltage.Uc   = 0.0f;
-    handle->phaseCurrent.Ia   = 0.0f;
-    handle->phaseCurrent.Ib   = 0.0f;
-    handle->phaseCurrent.Ic   = 0.0f;
     handle->voltageAlphaBeta.alpha = 0.0f;
     handle->voltageAlphaBeta.beta  = 0.0f;
-    handle->currentAlphaBeta.alpha = 0.0f;
-    handle->currentAlphaBeta.beta  = 0.0f;
     handle->voltageDQ.d       = 0.0f;
     handle->voltageDQ.q       = 0.0f;
-    handle->currentDQ.d       = 0.0f;
-    handle->currentDQ.q       = 0.0f;
     handle->electricalAngle   = 0.0f;
 }
 
@@ -254,55 +247,6 @@ void FOC_SetPhaseVoltage(FOC_Handle *handle)
 
 
 /**
- * @brief 基于句柄保存的上下文执行 Clarke 变换。
- *
- * @param[in,out] handle FOC 句柄指针，需提供三相电流采样值。
- */
-void FOC_ClarkeTransform(FOC_Handle *handle)
-{
-    if(handle == NULL)
-    {
-        return;
-    }
-
-    /*
-     * 在三相对称系统中，Clarke 变换使用两相电流即可描述矢量。
-     * 由于 Ic = -Ia - Ib，只需采集 Ia、Ib 便能重建 αβ 平面，
-     * 从而减少一个电流传感器的硬件成本。
-     */
-    handle->currentAlphaBeta.alpha = handle->phaseCurrent.Ia;
-    handle->currentAlphaBeta.beta  = (handle->phaseCurrent.Ia + 2.0f * handle->phaseCurrent.Ib) * INV_SQRT3;
-}
-
-
-/**
- * @brief 基于句柄保存的 αβ 电流执行 Park 变换，结果写回句柄。
- *
- * @param[in,out] handle FOC 句柄指针，需提供 αβ 电流与电角度。
- */
-void FOC_ParkTransform(FOC_Handle *handle)
-{
-    float sin_angle;
-    float cos_angle;
-
-    if(handle == NULL)
-    {
-        return;
-    }
-
-    sin_angle = sinf(handle->electricalAngle);
-    cos_angle = cosf(handle->electricalAngle);
-
-    /*
-     * d 轴对应励磁分量，q 轴对应转矩分量。通过旋转到磁链同步坐标系，
-     * 可实现对两个分量的独立调节。
-     */
-    handle->currentDQ.d = handle->currentAlphaBeta.alpha * cos_angle + handle->currentAlphaBeta.beta * sin_angle;
-    handle->currentDQ.q = -handle->currentAlphaBeta.alpha * sin_angle + handle->currentAlphaBeta.beta * cos_angle;
-}
-
-
-/**
  * @brief 执行逆 Clarke 变换，并将结果回写至句柄缓存。
  *
  * @param[in,out] handle FOC 句柄指针，需提供 αβ 电压指令。
@@ -324,9 +268,9 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle)
     ib_temp = (-handle->voltageAlphaBeta.alpha + SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
     ic_temp = (-handle->voltageAlphaBeta.alpha - SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
 
-    handle->phaseCurrent.Ia = handle->voltageAlphaBeta.alpha;
-    handle->phaseCurrent.Ib = ib_temp;
-    handle->phaseCurrent.Ic = ic_temp;
+    handle->phaseVoltage.Ua = handle->voltageAlphaBeta.alpha;
+    handle->phaseVoltage.Ub = ib_temp;
+    handle->phaseVoltage.Uc = ic_temp;
 }
 
 
@@ -339,14 +283,16 @@ void FOC_InverseParkTransform(FOC_Handle *handle)
 {
     float sin_angle;
     float cos_angle;
+    float transformAngle;
 
     if(handle == NULL)
     {
         return;
     }
 
-    sin_angle = sinf(handle->electricalAngle);
-    cos_angle = cosf(handle->electricalAngle);
+    transformAngle = FOC_normalizeAngle(handle->electricalAngle + handle->config.zeroElectricAngle);
+    sin_angle = sinf(transformAngle);
+    cos_angle = cosf(transformAngle);
 
     /*
      * 逆帕克变换将旋转坐标系下的指令量映射回定子坐标系，
@@ -354,37 +300,6 @@ void FOC_InverseParkTransform(FOC_Handle *handle)
      */
     handle->voltageAlphaBeta.alpha = handle->voltageDQ.d * cos_angle - handle->voltageDQ.q * sin_angle;
     handle->voltageAlphaBeta.beta  = handle->voltageDQ.d * sin_angle + handle->voltageDQ.q * cos_angle;
-}
-
-
-/**
- * @brief 综合句柄配置执行 dq->αβ 变换，并缓存 αβ 电压指令。
- *
- * @param[in,out] handle FOC 句柄指针，需提供 dq 电压指令与电角度。
- */
-void FOC_SetAlphaBetaVoltage(FOC_Handle *handle)
-{
-    float normalizedAngle;
-
-    if(handle == NULL)
-    {
-        return;
-    }
-
-    normalizedAngle = FOC_normalizeAngle(handle->electricalAngle + handle->config.zeroElectricAngle);
-
-    /*
-     * 采用标准逆帕克变换，同时缓存结果用于后续阶段的矢量调制或监控。
-     */
-    {
-        float sinAngle = sinf(normalizedAngle);
-        float cosAngle = cosf(normalizedAngle);
-
-        handle->voltageAlphaBeta.alpha =
-            handle->voltageDQ.d * cosAngle - handle->voltageDQ.q * sinAngle;
-        handle->voltageAlphaBeta.beta  =
-            handle->voltageDQ.d * sinAngle + handle->voltageDQ.q * cosAngle;
-    }
 }
 
 
@@ -458,13 +373,6 @@ bool FOC_SetZeroElectricAngle(FOC_Handle *handle, float zeroAngle)
     return true;
 }
 
-/**
- * @brief 获取最近一次逆帕克变换后的 αβ 电压指令。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 αβ 电压缓存的常量指针，若句柄为空则返回 NULL。
- */
 const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle)
 {
     if(handle == NULL)
@@ -475,30 +383,6 @@ const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle)
     return &handle->voltageAlphaBeta;
 }
 
-/**
- * @brief 获取最近一次 Clarke 变换后的 αβ 电流矢量。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 αβ 电流缓存的常量指针，若句柄为空则返回 NULL。
- */
-const FOC_AlphaBeta *FOC_GetAlphaBetaCurrent(const FOC_Handle *handle)
-{
-    if(handle == NULL)
-    {
-        return NULL;
-    }
-
-    return &handle->currentAlphaBeta;
-}
-
-/**
- * @brief 获取最近一次设置的 dq 电压矢量。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 dq 电压缓存的常量指针，若句柄为空则返回 NULL。
- */
 const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle)
 {
     if(handle == NULL)
@@ -507,23 +391,6 @@ const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle)
     }
 
     return &handle->voltageDQ;
-}
-
-/**
- * @brief 获取最近一次 Park 变换得到的 dq 电流矢量。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 dq 电流缓存的常量指针，若句柄为空则返回 NULL。
- */
-const FOC_DQ *FOC_GetDQCurrent(const FOC_Handle *handle)
-{
-    if(handle == NULL)
-    {
-        return NULL;
-    }
-
-    return &handle->currentDQ;
 }
 
 
