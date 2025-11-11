@@ -97,7 +97,7 @@ void FOC_Task_Func(void * pvParameters){
 
     while(1){
 
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(1));//1ms
         //暂时实现开环
         FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
     }
