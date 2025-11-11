@@ -23,8 +23,8 @@
  */
 static uint32_t FOC_OpenLoop_getTimeUs(void)
 {
-    const TickType_t tick = xTaskGetTickCount();
-    const uint32_t usPerTick = (uint32_t)portTICK_PERIOD_MS * 1000U;
+    const TickType_t tick = xTaskGetTickCount();//获取当前的tick计数
+    const uint32_t usPerTick = (uint32_t)portTICK_PERIOD_MS * 1000U;//微秒/tick
     return (uint32_t)tick * usPerTick;
 }
 
@@ -104,11 +104,11 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
      */
     nowUs = FOC_OpenLoop_getTimeUs();
     deltaUs = nowUs - state->timestampUs;
-    timeStep = (float)deltaUs * 1e-6f;
+    timeStep = (float)deltaUs * 1e-6f;//单位为s
 
     if((timeStep <= 0.0f) || (timeStep > 0.5f))
     {
-        timeStep = 1e-3f;
+        timeStep = 1e-3f;//1ms
     }
 
     /*
@@ -124,9 +124,9 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
      * 对目标速度进行积分以更新机械角度。若角速度存在抖动，该归一化
      * 操作可将角度保持在一周范围内，避免浮点数在长时间运行下累积漂移。
      */
-    state->shaftAngle = FOC_normalizeAngle(state->shaftAngle + targetVelocity * timeStep);
+    state->shaftAngle = FOC_normalizeAngle(state->shaftAngle + targetVelocity * timeStep);//新的角度
 
-    supplyVoltage = handle->config.voltagePowerSupply;
+    supplyVoltage = handle->config.voltagePowerSupply;//读取母线电压
 
     if((state->voltageLimit > 0.0f) && isfinite(state->voltageLimit))
     {
@@ -136,7 +136,7 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
          */
         uqCommand = state->voltageLimit;
     }
-    else if(supplyVoltage > 0.0f)
+    else if(supplyVoltage > 0.0f)//母线电压供电有效的判定
     {
         /*
          * 在未提供限幅的情况下，默认使用母线电压的三分之一作为初始输出，
@@ -182,19 +182,17 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
     handle->voltageDQ.q = uqCommand;
 
     /*
-     * 复用 FOC 模块提供的 dq→αβ 变换接口，确保与闭环控制路径一致，
-     * 也可共享零电角度等配置参数。
-     */
-    /*
      * 调用既有 dq→αβ 变换接口，将当前的 dq 电压矢量旋转至静止坐标系，
      * 以便后续进一步生成三相电压。
      */
-    FOC_SetAlphaBetaVoltage(handle);
+    FOC_SetAlphaBetaVoltage(handle);//dq→αβ 
 
     /*
      * 根据逆 Clarke 变换关系推导三相电压，其中 Ua 直接对应 α 分量，
      * Ub/Uc 则需叠加 ±√3/2 的 β 分量，以确保三相矢量平衡。
      */
+
+    //FOC_InverseClarkeTransform(handle);
     handle->phaseVoltage.Ua = handle->voltageAlphaBeta.alpha;
     handle->phaseVoltage.Ub = (-handle->voltageAlphaBeta.alpha +
                                SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;

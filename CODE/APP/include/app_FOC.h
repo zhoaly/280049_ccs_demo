@@ -54,7 +54,7 @@ typedef struct
     float Ia; /**< A 相电流，单位 A。 */
     float Ib; /**< B 相电流，单位 A。 */
     float Ic; /**< C 相电流，单位 A。 */
-} FOC_ThreePhaseCurrent;
+} FOC_PhaseCurrent;
 
 /**
  * @brief αβ 坐标系向量。
@@ -93,7 +93,7 @@ typedef struct
 {
     FOC_Config            config;            /**< 全局配置参数集合。 */
     FOC_PhaseVoltage      phaseVoltage;      /**< 最近一次三相电压指令。 */
-    FOC_ThreePhaseCurrent phaseCurrent;      /**< 最近一次三相电流采样。 */
+    FOC_PhaseCurrent      phaseCurrent;      /**< 最近一次三相电流采样。 */
     FOC_AlphaBeta         voltageAlphaBeta;  /**< dq->αβ 逆变换后的电压指令缓存。 */
     FOC_AlphaBeta         currentAlphaBeta;  /**< αβ 坐标系的电流值。 */
     FOC_DQ                voltageDQ;         /**< dq 坐标系的电压指令。 */
@@ -254,13 +254,6 @@ const FOC_DQ *FOC_GetDQCurrent(const FOC_Handle *handle);
  */
 static bool FOC_init(FOC_Handle *handle);
 
-/**
- * @brief 将角度归一化至 [0, 2π) 区间，避免累计误差导致的越界。
- *
- * @param[in] angle 原始角度，单位 rad，可正可负。
- *
- * @return 归一化后的角度值，范围 [0, 2π)。
- */
-static float FOC_normalizeAngle(float angle);
+
 
 #endif /* APP_FOC_H */
