@@ -253,8 +253,8 @@ void FOC_SetPhaseVoltage(FOC_Handle *handle)
  */
 void FOC_InverseClarkeTransform(FOC_Handle *handle)
 {
-    float ib_temp;
-    float ic_temp;
+    float vb_temp;
+    float vc_temp;
 
     if(handle == NULL)
     {
@@ -265,12 +265,12 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle)
      * 基于 αβ 分量重构三相量时，需利用三相系统 Ia + Ib + Ic = 0 的约束。
      * 这里采用对称三相系统的标准公式，便于直接驱动三相逆变桥。
      */
-    ib_temp = (-handle->voltageAlphaBeta.alpha + SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
-    ic_temp = (-handle->voltageAlphaBeta.alpha - SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
+    vb_temp = (-handle->voltageAlphaBeta.alpha + SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
+    vc_temp = (-handle->voltageAlphaBeta.alpha - SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
 
     handle->phaseVoltage.Ua = handle->voltageAlphaBeta.alpha;
-    handle->phaseVoltage.Ub = ib_temp;
-    handle->phaseVoltage.Uc = ic_temp;
+    handle->phaseVoltage.Ub = vb_temp;
+    handle->phaseVoltage.Uc = vc_temp;
 }
 
 
