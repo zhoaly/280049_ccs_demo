@@ -21,15 +21,6 @@
 #include "driverlib/pin_map.h"
 
 /**
- * @brief √3 常量，用于三相坐标与 αβ 坐标之间的转换。
- */
-#define     SQRT3_F                        (1.73205080757f)
-/**
- * @brief 1/√3 常量，常用于 Clarke 变换归一化。
- */
-#define     INV_SQRT3_F                    (0.57735026919f)
-
-/**
  * @brief 默认 FOC 句柄实例。
  *
  * 在未显式传入句柄的场景下，任务入口会回退到该静态实例，确保模块
@@ -46,7 +37,7 @@ static FOC_Handle s_focHandle;
  *
  * @return 钳制后的数值。
  */
-static float FOC_clamp(float value, float minValue, float maxValue)
+float FOC_clamp(float value, float minValue, float maxValue)
 {
     if(value < minValue)
     {
@@ -218,14 +209,14 @@ static void FOC_DriverEnable()
  *
  * @return 归一化后的角度，范围 [0, 2π)。
  */
-static float FOC_normalizeAngle(float angle)
+float FOC_normalizeAngle(float angle)
 {
     /*
      * fmodf 可保留浮点数的符号信息，通过与 2π 的取模实现周期化处理。
      * 对高频运行的角度积分器而言，可有效抑制数值逐渐增大造成的溢出风险。
      */
-    float a = fmodf(angle, 2.0f * PI);
-    return (a >= 0.0f) ? a : (a + 2.0f * PI);
+    float a = fmodf(angle, TWO_PI);
+    return (a >= 0.0f) ? a : (a + TWO_PI);
 }
 
 /**
@@ -280,7 +271,7 @@ void FOC_ClarkeTransform(FOC_Handle *handle)
      * 从而减少一个电流传感器的硬件成本。
      */
     handle->currentAlphaBeta.alpha = handle->phaseCurrent.Ia;
-    handle->currentAlphaBeta.beta  = (handle->phaseCurrent.Ia + 2.0f * handle->phaseCurrent.Ib) * INV_SQRT3_F;
+    handle->currentAlphaBeta.beta  = (handle->phaseCurrent.Ia + 2.0f * handle->phaseCurrent.Ib) * INV_SQRT3;
 }
 
 
@@ -330,8 +321,8 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle)
      * 基于 αβ 分量重构三相量时，需利用三相系统 Ia + Ib + Ic = 0 的约束。
      * 这里采用对称三相系统的标准公式，便于直接驱动三相逆变桥。
      */
-    ib_temp = (-handle->voltageAlphaBeta.alpha + SQRT3_F * handle->voltageAlphaBeta.beta) * 0.5f;
-    ic_temp = (-handle->voltageAlphaBeta.alpha - SQRT3_F * handle->voltageAlphaBeta.beta) * 0.5f;
+    ib_temp = (-handle->voltageAlphaBeta.alpha + SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
+    ic_temp = (-handle->voltageAlphaBeta.alpha - SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
 
     handle->phaseCurrent.Ia = handle->voltageAlphaBeta.alpha;
     handle->phaseCurrent.Ib = ib_temp;
