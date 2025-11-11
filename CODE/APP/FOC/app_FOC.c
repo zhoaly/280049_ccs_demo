@@ -8,6 +8,7 @@
  */
 
 #include "app_FOC.h"
+#include "app_FOC_OpenLoop.h"
 #include "drv_epwm.h"
 
 
@@ -27,6 +28,13 @@
  * 始终拥有有效的运行环境。
  */
 static FOC_Handle s_focHandle;
+
+/**
+ * @brief 默认 FOC 开环状态句柄实例。
+ *
+ */
+static FOC_OpenLoopState s_focOpenLoopHandle;
+
 
 /**
  * @brief 软限幅函数，确保输入值位于指定范围内。
@@ -60,16 +68,25 @@ float FOC_clamp(float value, float minValue, float maxValue)
  * @param[in] pvParameters 任务创建时传入的句柄指针，允许为 NULL。
  */
 void FOC_Task_Func(void * pvParameters){
-    FOC_Handle *handle = (FOC_Handle *)pvParameters;
 
-    if(handle == NULL)//null的异常处理
+    FOC_Handle *handle_FOC = (FOC_Handle *)pvParameters;
+    FOC_OpenLoopState *handle_OpenLoop_State = (FOC_OpenLoopState *)pvParameters;
+
+
+    if(handle_FOC == NULL)//null的异常处理
     {
-        handle = &s_focHandle;
+        handle_FOC = &s_focHandle;
     }
 
-    FOC_HandleInit(handle);
+    if(handle_OpenLoop_State == NULL)//null的异常处理
+    {
+        handle_OpenLoop_State = &s_focOpenLoopHandle;
+    }
 
-    if(!FOC_init(handle))
+    FOC_HandleInit(handle_FOC);
+    FOC_OpenLoop_Init(handle_OpenLoop_State,6);//六极对
+
+    if(!FOC_init(handle_FOC))
     {
         /* 初始化失败时进入安全等待，避免继续执行未配置好的控制逻辑。 */
         for(;;)
@@ -79,11 +96,10 @@ void FOC_Task_Func(void * pvParameters){
     }
 
     while(1){
-        /*
-         * 在实际项目中，此处应插入电流采样、坐标变换、调制输出等步骤。
-         * 当前示例任务仅周期性休眠，作为框架演示和占位。
-         */
-        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+        //暂时实现开环
+        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
     }
 
 }
