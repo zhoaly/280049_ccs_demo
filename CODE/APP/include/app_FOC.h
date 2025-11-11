@@ -19,7 +19,22 @@
 /**
  * @brief 近似值 π，用于角度换算。可根据精度需求在实现中替换为更高精度常量。
  */
-#define PI 3.14159f
+#define PI      3.14159f
+
+/**
+ * @brief 2π 常量，常用于角度归一化与周期换算。
+ */
+#define TWO_PI  6.28318530718f
+
+/**
+ * @brief √3 常量，广泛用于 Clarke/逆 Clarke 变换及空间矢量调制。
+ */
+#define SQRT3   1.73205080757f
+
+/**
+ * @brief 1/√3 常量，配合 αβ 坐标变换使用。
+ */
+#define INV_SQRT3 0.57735026919f
 
 /**
  * @brief 三相电压指令结构体，使用结构体封装以便于参数校验与扩展。
@@ -198,6 +213,16 @@ const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle);
  * @return 指向内部 αβ 电流缓存的常量指针，若句柄为空则返回 NULL。
  */
 const FOC_AlphaBeta *FOC_GetAlphaBetaCurrent(const FOC_Handle *handle);
+
+/**
+ * @brief 归一化角度值，保证角度输入始终位于 [0, 2π)。
+ */
+float FOC_normalizeAngle(float angle);
+
+/**
+ * @brief 软限幅函数，确保输入值位于指定范围内。
+ */
+float FOC_clamp(float value, float minValue, float maxValue);
 
 /**
  * @brief 获取最近一次写入的 dq 电压矢量。
