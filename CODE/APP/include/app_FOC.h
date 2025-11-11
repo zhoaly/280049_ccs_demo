@@ -47,16 +47,6 @@ typedef struct
 } FOC_PhaseVoltage;
 
 /**
- * @brief 三相电流测量值结构体。
- */
-typedef struct
-{
-    float Ia; /**< A 相电流，单位 A。 */
-    float Ib; /**< B 相电流，单位 A。 */
-    float Ic; /**< C 相电流，单位 A。 */
-} FOC_PhaseCurrent;
-
-/**
  * @brief αβ 坐标系向量。
  */
 typedef struct
@@ -93,11 +83,8 @@ typedef struct
 {
     FOC_Config            config;            /**< 全局配置参数集合。 */
     FOC_PhaseVoltage      phaseVoltage;      /**< 最近一次三相电压指令。 */
-    FOC_PhaseCurrent      phaseCurrent;      /**< 最近一次三相电流采样。 */
     FOC_AlphaBeta         voltageAlphaBeta;  /**< dq->αβ 逆变换后的电压指令缓存。 */
-    FOC_AlphaBeta         currentAlphaBeta;  /**< αβ 坐标系的电流值。 */
     FOC_DQ                voltageDQ;         /**< dq 坐标系的电压指令。 */
-    FOC_DQ                currentDQ;         /**< dq 坐标系的电流值。 */
     float                 electricalAngle;   /**< 当前电角度，单位 rad，需在调用变换函数前更新。 */
 } FOC_Handle;
 
@@ -162,20 +149,6 @@ bool FOC_SetZeroElectricAngle(FOC_Handle *handle, float zeroAngle);
 void FOC_SetPhaseVoltage(FOC_Handle *handle);
 
 /**
- * @brief 执行 Clarke 变换并刷新 αβ 电流缓存。
- *
- * @param[in,out] handle FOC 句柄指针，需提前更新三相电流测量值。
- */
-void FOC_ClarkeTransform(FOC_Handle *handle);
-
-/**
- * @brief 执行 Park 变换并刷新 dq 电流缓存。
- *
- * @param[in,out] handle FOC 句柄指针，需提前完成 αβ 电流及电角度更新。
- */
-void FOC_ParkTransform(FOC_Handle *handle);
-
-/**
  * @brief 执行逆 Clarke 变换，重建三相量。
  *
  * @param[in,out] handle FOC 句柄指针，将依据 αβ 电压指令生成三相电压。
@@ -190,13 +163,6 @@ void FOC_InverseClarkeTransform(FOC_Handle *handle);
 void FOC_InverseParkTransform(FOC_Handle *handle);
 
 /**
- * @brief 根据 dq 指令矢量计算 αβ 电压并缓存，通常配合 SVPWM 使用。
- *
- * @param[in,out] handle FOC 句柄指针，需设置 dq 电压与电角度。
- */
-void FOC_SetAlphaBetaVoltage(FOC_Handle *handle);
-
-/**
  * @brief 获取最新的 αβ 电压矢量指令。
  *
  * @param[in] handle FOC 句柄指针，不能为空。
@@ -204,15 +170,6 @@ void FOC_SetAlphaBetaVoltage(FOC_Handle *handle);
  * @return 指向内部 αβ 电压缓存的常量指针，若句柄为空则返回 NULL。
  */
 const FOC_AlphaBeta *FOC_GetAlphaBetaVoltage(const FOC_Handle *handle);
-
-/**
- * @brief 获取最新的 αβ 电流测量值。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 αβ 电流缓存的常量指针，若句柄为空则返回 NULL。
- */
-const FOC_AlphaBeta *FOC_GetAlphaBetaCurrent(const FOC_Handle *handle);
 
 /**
  * @brief 归一化角度值，保证角度输入始终位于 [0, 2π)。
@@ -232,17 +189,6 @@ float FOC_clamp(float value, float minValue, float maxValue);
  * @return 指向内部 dq 电压缓存的常量指针，若句柄为空则返回 NULL。
  */
 const FOC_DQ *FOC_GetDQVoltage(const FOC_Handle *handle);
-
-/**
- * @brief 获取最新的 dq 电流测量值。
- *
- * @param[in] handle FOC 句柄指针，不能为空。
- *
- * @return 指向内部 dq 电流缓存的常量指针，若句柄为空则返回 NULL。
- */
-const FOC_DQ *FOC_GetDQCurrent(const FOC_Handle *handle);
-
-
 
 /**
  * @brief 内部初始化例程，完成 PWM 配置等底层准备工作。

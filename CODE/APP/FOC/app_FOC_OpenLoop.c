@@ -175,29 +175,18 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
      * 随后供逆 Park 变换与 SVPWM 等算法使用，必须在调用相关接口前更新。
      */
     polePairs = (state->polePairs == 0U) ? 1.0f : (float)state->polePairs;
-    electricalAngle = FOC_normalizeAngle(state->shaftAngle * polePairs + handle->config.zeroElectricAngle);
+    electricalAngle = FOC_normalizeAngle(state->shaftAngle * polePairs);
     handle->electricalAngle = electricalAngle;
 
     handle->voltageDQ.d = 0.0f;
     handle->voltageDQ.q = uqCommand;
 
     /*
-     * 调用既有 dq→αβ 变换接口，将当前的 dq 电压矢量旋转至静止坐标系，
-     * 以便后续进一步生成三相电压。
+     * 先将 dq 电压矢量通过逆帕克变换旋转回定子坐标系，再执行逆克拉克
+     * 变换重建三相电压，便于直接写入逆变器。
      */
-    FOC_SetAlphaBetaVoltage(handle);//dq→αβ 
-
-    /*
-     * 根据逆 Clarke 变换关系推导三相电压，其中 Ua 直接对应 α 分量，
-     * Ub/Uc 则需叠加 ±√3/2 的 β 分量，以确保三相矢量平衡。
-     */
-
-    //FOC_InverseClarkeTransform(handle);
-    handle->phaseVoltage.Ua = handle->voltageAlphaBeta.alpha;
-    handle->phaseVoltage.Ub = (-handle->voltageAlphaBeta.alpha +
-                               SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
-    handle->phaseVoltage.Uc = (-handle->voltageAlphaBeta.alpha -
-                               SQRT3 * handle->voltageAlphaBeta.beta) * 0.5f;
+    FOC_InverseParkTransform(handle);
+    FOC_InverseClarkeTransform(handle);
 
     /*
      * 将三相电压指令写入底层驱动模块，确保逆变器输出与计算结果保持一致。
