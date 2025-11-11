@@ -124,6 +124,8 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
      * 对目标速度进行积分以更新机械角度。若角速度存在抖动，该归一化
      * 操作可将角度保持在一周范围内，避免浮点数在长时间运行下累积漂移。
      */
+
+    //FOC_OpenLoop_SetShaftAngle(state,FOC_normalizeAngle(state->shaftAngle + targetVelocity * timeStep));
     state->shaftAngle = FOC_normalizeAngle(state->shaftAngle + targetVelocity * timeStep);//新的角度
 
     supplyVoltage = handle->config.voltagePowerSupply;//读取母线电压
