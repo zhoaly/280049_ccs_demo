@@ -10,8 +10,10 @@
 #include "app_FOC.h"
 #include "drv_epwm.h"
 
+
 #include "c2000_freertos.h"
 #include "device.h"
+#include "board.h"
 #include "math.h"
 #include "driverlib/gpio.h"
 #include "driverlib/epwm.h"
@@ -191,7 +193,21 @@ static bool FOC_init(FOC_Handle *handle)
         }
     }
 
+    FOC_DriverEnable();//enable driver
+
     return true;
+}
+
+/**
+ * @brief 三相位驱动的使能位,在初始化时使能
+ */
+static void FOC_DriverEnable()
+{
+
+    GPIO_writePin(FOC_DRV_EN1,1);//使能
+    GPIO_writePin(FOC_DRV_EN2,1);
+    GPIO_writePin(FOC_DRV_EN3,1);
+
 }
 
 

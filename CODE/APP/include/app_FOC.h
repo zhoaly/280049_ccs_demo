@@ -106,6 +106,11 @@ void FOC_Task_Func(void *pvParameters);
 void FOC_HandleInit(FOC_Handle *handle);
 
 /**
+ * @brief 三相位驱动的使能位,在初始化时使能
+ */
+static void FOC_DriverEnable();
+
+/**
  * @brief 设置自定义配置。
  *
  * @param[in,out] handle FOC 句柄指针，不能为空。
