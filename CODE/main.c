@@ -74,6 +74,7 @@ void main(void)
     //以下为业务代码********************************************/
     //驱动初始化************************************************/
 
+
     
     EINT;
     ERTM;
@@ -101,7 +102,7 @@ void myTask0_func(void * pvParameters){
 
 
 //
-// Timer1 中断服务程序 - 为红色任务释放信号量
+// Timer1 中断服务程序
 //
 //可以作为时基?
 __interrupt void timer1_ISR( void )
@@ -124,6 +125,10 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 
     /* 当 configCHECK_FOR_STACK_OVERFLOW 定义为 1 或 2 时执行运行时堆栈溢出检查。
     如果检测到堆栈溢出，将调用此钩子函数。 */
+
+    GPIO_writePin(myLED1_GPIO,1);
+    GPIO_writePin(myLED2_GPIO,1);//栈溢出标志 两灯常亮
+    
     taskDISABLE_INTERRUPTS();
     for( ;; );
 }
