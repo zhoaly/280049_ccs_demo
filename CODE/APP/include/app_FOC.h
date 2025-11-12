@@ -108,6 +108,13 @@ void FOC_Task_Func(void *pvParameters);
 void FOC_HandleInit(FOC_Handle *handle);
 
 /**
+ * @brief 执行零位校准,给d轴小电流将电机拉到零位,在主函数循环开始时调用
+*
+ * @param[in,out] handle FOC 句柄指针，需提供有效配置并接收初始化后的状态。
+ */
+void FOC_RunZeroCalibration(FOC_Handle *handle);
+
+/**
  * @brief 三相位驱动的使能位,在初始化时使能
  */
 static void FOC_DriverEnable();

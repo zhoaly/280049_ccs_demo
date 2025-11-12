@@ -95,10 +95,16 @@ void FOC_Task_Func(void * pvParameters){
         }
     }
 
-    while(1){
+    //在此临时实现,后续应使用计时器+信号量实现
+    FOC_RunZeroCalibration(handle_FOC);
+    vTaskDelay(pdMS_TO_TICKS(3000));//3s矫正
+
+    while(1){//待添加零位校准逻辑
 
         vTaskDelay(pdMS_TO_TICKS(1));//1ms
         //暂时实现开环
+        
+
         FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
     }
 
@@ -196,6 +202,49 @@ static bool FOC_init(FOC_Handle *handle)
     FOC_DriverEnable();//enable driver
 
     return true;
+}
+
+
+/**
+ * @brief 执行零位校准,给d轴小电流将电机拉到零位,在主函数循环开始时调用
+*
+ * @param[in,out] handle FOC 句柄指针，需提供有效配置并接收初始化后的状态。
+ */
+void FOC_RunZeroCalibration(FOC_Handle *handle)
+{
+    float supplyVoltage;
+    float udCommand = 0;
+
+    supplyVoltage = handle->config.voltagePowerSupply;//读取母线电压
+
+    if(supplyVoltage > 0.0f)
+    {
+        /*
+         * 在供电有效的情况下，将指令限定在 0~母线电压一半的范围内，
+         */
+        float maxAllowable = supplyVoltage * 0.5f;
+        udCommand = FOC_clamp(udCommand, 0.0f, maxAllowable);
+    }
+    else
+    {
+        udCommand = FOC_clamp(udCommand, 0.0f, udCommand);
+    }
+
+
+    handle->voltageDQ.d = udCommand;
+    handle->voltageDQ.q = 0.0f;
+    /*
+     * 先将 dq 电压矢量通过逆帕克变换旋转回定子坐标系，再执行逆克拉克
+     * 变换重建三相电压，便于直接写入逆变器。
+     */
+    FOC_InverseParkTransform(handle);
+    FOC_InverseClarkeTransform(handle);
+
+    /*
+     * 将三相电压指令写入底层驱动模块，确保逆变器输出与计算结果保持一致。
+     */
+    FOC_SetPhaseVoltage(handle);
+
 }
 
 /**
