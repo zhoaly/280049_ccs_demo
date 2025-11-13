@@ -84,7 +84,7 @@ void FOC_Task_Func(void * pvParameters){
     }
 
     FOC_HandleInit(handle_FOC);
-    FOC_OpenLoop_Init(handle_OpenLoop_State,6);//六极对
+    FOC_OpenLoop_Init(handle_OpenLoop_State,7);//六极对
 
     if(!FOC_init(handle_FOC))
     {
@@ -97,15 +97,16 @@ void FOC_Task_Func(void * pvParameters){
 
     //在此临时实现,后续应使用计时器+信号量实现
     FOC_RunZeroCalibration(handle_FOC);
-    vTaskDelay(pdMS_TO_TICKS(3000));//3s矫正
+    vTaskDelay(pdMS_TO_TICKS(1000));//200ms矫正
 
     while(1){//待添加零位校准逻辑
 
+        //GPIO_togglePin(myLED1_GPIO);
         vTaskDelay(pdMS_TO_TICKS(1));//1ms
         //暂时实现开环
         
 
-        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
+        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,100);
     }
 
 }
@@ -213,7 +214,7 @@ static bool FOC_init(FOC_Handle *handle)
 void FOC_RunZeroCalibration(FOC_Handle *handle)
 {
     float supplyVoltage;
-    float udCommand = 0;
+    float udCommand = 5.0f;
 
     supplyVoltage = handle->config.voltagePowerSupply;//读取母线电压
 
@@ -300,10 +301,17 @@ void FOC_SetPhaseVoltage(FOC_Handle *handle)
 
     /*
      * 计算占空比并限制在 [0, 1] 范围内，防止非法值损坏驱动器件。
+     * 添加母线电压中点补偿,使得逆变器输出正弦(抬高正弦)
      */
-    dutyA = FOC_clamp(handle->phaseVoltage.Ua / handle->config.voltagePowerSupply, 0.0f, 1.0f);
-    dutyB = FOC_clamp(handle->phaseVoltage.Ub / handle->config.voltagePowerSupply, 0.0f, 1.0f);
-    dutyC = FOC_clamp(handle->phaseVoltage.Uc / handle->config.voltagePowerSupply, 0.0f, 1.0f);
+
+    // dutyA = FOC_clamp(handle->phaseVoltage.Ua / handle->config.voltagePowerSupply , 0.0f, 1.0f);
+    // dutyB = FOC_clamp(handle->phaseVoltage.Ub / handle->config.voltagePowerSupply , 0.0f, 1.0f);
+    // dutyC = FOC_clamp(handle->phaseVoltage.Uc / handle->config.voltagePowerSupply , 0.0f, 1.0f);
+
+    dutyA = FOC_clamp(handle->phaseVoltage.Ua / handle->config.voltagePowerSupply + 0.5 , 0.0f, 1.0f);
+    dutyB = FOC_clamp(handle->phaseVoltage.Ub / handle->config.voltagePowerSupply + 0.5, 0.0f, 1.0f);
+    dutyC = FOC_clamp(handle->phaseVoltage.Uc / handle->config.voltagePowerSupply + 0.5, 0.0f, 1.0f);
+
 
     (void)DRV_EPWM_setDutyCycle(0U, dutyA);
     (void)DRV_EPWM_setDutyCycle(1U, dutyB);
@@ -411,7 +419,7 @@ FOC_Config FOC_GetDefaultConfig(void)
         .defaultDuty        = 0.0f,
         .defaultDeadband    = 0U,
         .defaultFrequency   = 10000U,
-        .voltagePowerSupply = 12.0f,
+        .voltagePowerSupply = 6.0f,
         .zeroElectricAngle  = 0.0f
     };
 

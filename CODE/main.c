@@ -95,7 +95,7 @@ void myTask0_func(void * pvParameters){
     while (1) {
         i++;
         vTaskDelay(pdTICKS_TO_MS(1000));
-        GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
+        //GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
     }
 }
 
