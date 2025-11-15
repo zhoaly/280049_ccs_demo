@@ -15,6 +15,8 @@ const led2           = led.addInstance();
 const cputimer       = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1      = cputimer.addInstance();
 const device_support = scripting.addModule("/driverlib/device_support.js");
+const eqep           = scripting.addModule("/driverlib/eqep.js", {}, false);
+const eqep1          = eqep.addInstance();
 const gpio           = scripting.addModule("/driverlib/gpio.js", {}, false);
 const gpio3          = gpio.addInstance();
 const gpio4          = gpio.addInstance();
@@ -49,6 +51,17 @@ cputimer1.startTimer                = true;
 cputimer1.timerPeriod               = 10000000;
 cputimer1.timerInt.interruptHandler = "timer1_ISR";
 cputimer1.timerInt.enableInterrupt  = true;
+
+eqep1.$name                      = "myEQEP0";
+eqep1.positionCounterMax         = 4095;
+eqep1.enableModule               = true;
+eqep1.enableUnitTimer            = true;
+eqep1.unitTimerPeriod            = 1000000;
+eqep1.useCase                    = "NO STROBE";
+eqep1.eqep.$assign               = "EQEP1";
+eqep1.eqep.eqep_aPin.$assign     = "GPIO28";
+eqep1.eqep.eqep_bPin.$assign     = "GPIO29";
+eqep1.eqep.eqep_indexPin.$assign = "GPIO13";
 
 gpio3.$name           = "FOC_DRV_EN1";
 gpio3.direction       = "GPIO_DIR_MODE_OUT";

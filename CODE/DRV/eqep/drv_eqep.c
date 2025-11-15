@@ -12,7 +12,7 @@
 #include "driverlib/sysctl.h"
 
 #define DRV_EQEP_DEFAULT_COUNTS_PER_REV   (16384UL)  /**< 默认磁编码器分辨率（14bit）。 */
-#define DRV_EQEP_DEFAULT_POLE_PAIRS       (1UL)      /**< 默认极对数。 */
+#define DRV_EQEP_DEFAULT_POLE_PAIRS       (1UL)      /**< 默认极对数。 指的是电机上用于检测位置的磁铁的极对数*/ 
 #define DRV_EQEP_GPIO_QEPA                (6U)
 #define DRV_EQEP_GPIO_QEPB                (7U)
 #define DRV_EQEP_GPIO_INDEX               (9U)

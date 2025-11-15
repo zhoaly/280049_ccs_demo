@@ -106,7 +106,7 @@ void FOC_Task_Func(void * pvParameters){
         //暂时实现开环
         
 
-        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,100);
+        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
     }
 
 }
@@ -418,7 +418,7 @@ FOC_Config FOC_GetDefaultConfig(void)
     {
         .defaultDuty        = 0.0f,
         .defaultDeadband    = 0U,
-        .defaultFrequency   = 10000U,
+        .defaultFrequency   = 25000U,//20k
         .voltagePowerSupply = 6.0f,
         .zeroElectricAngle  = 0.0f
     };

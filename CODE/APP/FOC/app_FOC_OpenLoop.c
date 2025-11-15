@@ -144,7 +144,7 @@ float FOC_OpenLoop_RunVelocity(FOC_OpenLoopState *state,
          * 在未提供限幅的情况下，默认使用母线电压的三分之一作为初始输出，
          * 兼顾起动转矩与调试安全性。
          */
-        uqCommand = supplyVoltage / 10.0f;
+        uqCommand = supplyVoltage / 5.0f;
     }
     else
     {
