@@ -6,3 +6,4 @@
 
 - `driver1`、`driver2`：示例驱动文件。
 - `epwm`：基于 DriverLib 的 ePWM 驱动，完成 ePWM1~3 三对互补 PWM 的初始化，并提供频率、占空比、死区等参数接口。
+- `eqep`：封装 eQEP 外设，完成磁编码器所需的 GPIO、解码器配置，提供角度/速度读取及 CPR、极对数设置等接口。

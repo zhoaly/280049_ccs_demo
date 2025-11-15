@@ -9,9 +9,11 @@
 #include "c2000_freertos.h"
 // user include********************************************/
 #include "drv_epwm.h"
+#include "drv_eqep.h"
 #include "drv_spi.h"
 
 DRV_EPWM_State epwmstate0 = {};
+DRV_EQEP_State eqepstate0 = {};
 
 //
 // 函数原型
@@ -62,6 +64,7 @@ void main(void)
     EALLOW;//外设配置必须在rtosinit前??
     //DRV_SPI_init();
     DRV_EPWM_init();
+    DRV_EQEP_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
     //GPIO_writePin(myLED1_GPIO,1);
 
@@ -111,7 +114,9 @@ __interrupt void timer1_ISR( void )
     GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
 
     DRV_EPWM_getState(&epwmstate0);
-    
+    DRV_EQEP_update(0.0f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
+    DRV_EQEP_getState(&eqepstate0);
+
 }
 
 
