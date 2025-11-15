@@ -44,6 +44,7 @@ static DRV_EQEP_State s_state =
     .mechanicalSpeedRps  = 0.0f
 };
 
+#if !DRV_EQEP_USE_SYSCFG
 static void DRV_EQEP_enableModuleClock(void)
 {
     SysCtl_enablePeripheral(SYSCTL_PERIPH_CLK_EQEP1);
@@ -67,17 +68,20 @@ static void DRV_EQEP_configureGPIO(void)
     GPIO_setQualificationMode(DRV_EQEP_GPIO_INDEX, GPIO_QUAL_SYNC);
     GPIO_setQualificationMode(DRV_EQEP_GPIO_STROBE, GPIO_QUAL_SYNC);
 }
+#endif
 
 static void DRV_EQEP_applyCountsPerRevolution(uint32_t counts)
 {
     uint32_t base = s_internalState.base;
     uint32_t position = EQEP_getPosition(base);
-    uint32_t maxPosition = (counts == 0U) ? 0U : (counts - 1U);
 
     if(counts == 0U)
     {
         return;
     }
+
+#if !DRV_EQEP_USE_SYSCFG
+    uint32_t maxPosition = counts - 1U;
 
     EQEP_setPositionCounterConfig(base, EQEP_POSITION_RESET_MAX_POS, maxPosition);
 
@@ -87,6 +91,8 @@ static void DRV_EQEP_applyCountsPerRevolution(uint32_t counts)
     }
 
     EQEP_setPosition(base, position);
+#endif
+
     s_internalState.lastPosition = position;
     s_state.rawPosition = position;
 }
@@ -110,6 +116,7 @@ static void DRV_EQEP_configureModule(void)
 {
     uint32_t base = s_internalState.base;
 
+#if !DRV_EQEP_USE_SYSCFG
     EQEP_disableModule(base);
     EQEP_setDecoderConfig(base,
                           EQEP_CONFIG_QUADRATURE |
@@ -118,14 +125,19 @@ static void DRV_EQEP_configureModule(void)
                           EQEP_CONFIG_IGATE_DISABLE);
     EQEP_setEmulationMode(base, EQEP_EMULATIONMODE_RUNFREE);
     EQEP_setPosition(base, 0U);
-    s_internalState.lastPosition = 0U;
-    s_state.rawPosition = 0U;
+#endif
+
+    s_internalState.lastPosition = EQEP_getPosition(base);
+    s_state.rawPosition = s_internalState.lastPosition;
     s_state.deltaCounts = 0;
     s_state.mechanicalAngleRad = 0.0f;
     s_state.electricalAngleRad = 0.0f;
     s_state.mechanicalSpeedRps = 0.0f;
     DRV_EQEP_applyCountsPerRevolution(s_state.countsPerRevolution);
+
+#if !DRV_EQEP_USE_SYSCFG
     EQEP_enableModule(base);
+#endif
 }
 
 void DRV_EQEP_init(void)
@@ -135,8 +147,10 @@ void DRV_EQEP_init(void)
         return;
     }
 
+#if !DRV_EQEP_USE_SYSCFG
     DRV_EQEP_enableModuleClock();
     DRV_EQEP_configureGPIO();
+#endif
     DRV_EQEP_configureModule();
 
     s_internalState.initialized = true;

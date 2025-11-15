@@ -9,6 +9,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define DRV_EQEP_USE_SYSCFG    (1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
