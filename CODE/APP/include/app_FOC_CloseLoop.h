@@ -1,6 +1,6 @@
 /**
  * @file app_FOC_CloseLoop.h
- * @brief 基于 eQEP 的位置-力矩 PI 闭环控制接口。
+ * @brief 基于 eQEP 的位置-电压 PI 闭环控制接口。
  */
 
 #ifndef APP_FOC_CLOSE_LOOP_H
@@ -27,17 +27,14 @@ typedef struct
 } FOC_PIController;
 
 /**
- * @brief FOC 力矩-位置闭环控制状态。
+ * @brief FOC 位置-电压闭环控制状态。
  */
 typedef struct
 {
-    FOC_PIController positionLoop;   /**< 位置外环控制器。 */
-    FOC_PIController torqueLoop;     /**< 力矩/电压内环控制器。 */
+    FOC_PIController positionLoop;      /**< 位置环 PI 控制器。 */
     float            targetPositionRad; /**< 期望机械角度，单位 rad。 */
-    float            torqueCommand;  /**< 外环输出的力矩指令。 */
-    float            torqueLimit;    /**< 力矩指令限幅。 */
-    float            voltageLimit;   /**< q 轴电压限幅，0 表示跟随母线电压。 */
-    DRV_EQEP_State   measurement;    /**< 最近一次编码器采样缓存。 */
+    float            voltageLimit;      /**< q 轴电压限幅，0 表示跟随母线电压。 */
+    DRV_EQEP_State   measurement;       /**< 最近一次编码器采样缓存。 */
 } FOC_CloseLoopState;
 
 /**
@@ -51,17 +48,12 @@ void FOC_CloseLoop_Init(FOC_CloseLoopState *state);
 void FOC_CloseLoop_SetTargetPosition(FOC_CloseLoopState *state, float targetRad);
 
 /**
- * @brief 设置力矩限幅。
- */
-void FOC_CloseLoop_SetTorqueLimit(FOC_CloseLoopState *state, float torqueLimit);
-
-/**
  * @brief 设置 q 轴电压限幅。
  */
 void FOC_CloseLoop_SetVoltageLimit(FOC_CloseLoopState *state, float voltageLimit);
 
 /**
- * @brief 执行一次位置-力矩 PI 闭环计算并更新 PWM 输出。
+ * @brief 执行一次位置-电压 PI 闭环计算并更新 PWM 输出。
  *
  * @param[in,out] state               闭环状态，需先完成初始化。
  * @param[in,out] handle              FOC 句柄。
