@@ -9,6 +9,7 @@
 
 #include "app_FOC.h"
 #include "app_FOC_OpenLoop.h"
+#include "app_FOC_CloseLoop.h"
 #include "drv_epwm.h"
 #include "drv_eqep.h"
 
@@ -38,6 +39,11 @@ static FOC_Handle s_focHandle;
  *
  */
 static FOC_OpenLoopState s_focOpenLoopHandle;
+
+/**
+ * @brief 力矩-位置闭环控制句柄。
+ */
+static FOC_CloseLoopState s_focCloseLoopHandle;
 
 
 /**
@@ -75,6 +81,7 @@ void FOC_Task_Func(void * pvParameters){
 
     FOC_Handle *handle_FOC = (FOC_Handle *)pvParameters;
     FOC_OpenLoopState *handle_OpenLoop_State = (FOC_OpenLoopState *)pvParameters;
+    FOC_CloseLoopState *handle_CloseLoop_State = (FOC_CloseLoopState *)pvParameters;
 
 
     if(handle_FOC == NULL)//null的异常处理
@@ -87,8 +94,15 @@ void FOC_Task_Func(void * pvParameters){
         handle_OpenLoop_State = &s_focOpenLoopHandle;
     }
 
+    if(handle_CloseLoop_State == NULL)
+    {
+        handle_CloseLoop_State = &s_focCloseLoopHandle;
+    }
+
     FOC_HandleInit(handle_FOC);
     FOC_OpenLoop_Init(handle_OpenLoop_State,7);//六极对
+    FOC_CloseLoop_Init(handle_CloseLoop_State);
+    FOC_CloseLoop_SetTargetPosition(handle_CloseLoop_State, 0.0f);
 
     if(!FOC_init(handle_FOC))
     {
@@ -110,9 +124,14 @@ void FOC_Task_Func(void * pvParameters){
         {
             GPIO_togglePin(myLED2_GPIO);
 
-            FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
-            DRV_EQEP_update(0.001f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
-            DRV_EQEP_getState(&eqepstate0);
+            (void)FOC_CloseLoop_Run(handle_CloseLoop_State, handle_FOC, 0.001f);
+
+            const DRV_EQEP_State *latestState =
+                FOC_CloseLoop_GetLatestMeasurement(handle_CloseLoop_State);
+            if(latestState != NULL)
+            {
+                eqepstate0 = *latestState;
+            }
             GPIO_togglePin(myLED2_GPIO);
         }
 
