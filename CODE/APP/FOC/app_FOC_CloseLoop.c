@@ -1,6 +1,6 @@
 /**
  * @file app_FOC_CloseLoop.c
- * @brief 力矩-位置 PI 闭环控制实现。
+ * @brief 位置-电压 PI 闭环控制实现。
  */
 
 #include "app_FOC_CloseLoop.h"
@@ -76,20 +76,10 @@ void FOC_CloseLoop_Init(FOC_CloseLoopState *state)
     state->positionLoop.integral = 0.0f;
     state->positionLoop.integralMin = -5.0f;
     state->positionLoop.integralMax = 5.0f;
-    // 位置环用于产生力矩参考，其输出限制对应力矩/电压占空的最大幅值。
-    state->positionLoop.outputLimit = 3.0f; // 力矩参考（电压占空）的最大幅值
-
-    state->torqueLoop.kp = 0.8f;
-    state->torqueLoop.ki = 200.0f;
-    state->torqueLoop.integral = 0.0f;
-    state->torqueLoop.integralMin = -5.0f;
-    state->torqueLoop.integralMax = 5.0f;
-    // 力矩环输出的是 q 轴电压命令，实际限幅由总电压限制统一裁剪，因此置 0。
-    state->torqueLoop.outputLimit = 0.0f; // 由电压限幅统一裁剪
+    // 输出直接对应 q 轴电压，由统一电压限幅裁剪，因此禁用控制器自身限幅。
+    state->positionLoop.outputLimit = 0.0f;
 
     state->targetPositionRad = 0.0f;
-    state->torqueCommand     = 0.0f;
-    state->torqueLimit       = 3.0f;
     state->voltageLimit      = 0.0f;
 
     state->measurement.countsPerRevolution = 0U;
@@ -116,21 +106,6 @@ void FOC_CloseLoop_SetTargetPosition(FOC_CloseLoopState *state, float targetRad)
     state->targetPositionRad = FOC_normalizeAngle(targetRad);
 }
 
-void FOC_CloseLoop_SetTorqueLimit(FOC_CloseLoopState *state, float torqueLimit)
-{
-    if(state == NULL)
-    {
-        return;
-    }
-
-    if((torqueLimit <= 0.0f) || !isfinite(torqueLimit))
-    {
-        return;
-    }
-
-    state->torqueLimit = torqueLimit;
-}
-
 void FOC_CloseLoop_SetVoltageLimit(FOC_CloseLoopState *state, float voltageLimit)
 {
     if(state == NULL)
@@ -154,8 +129,6 @@ float FOC_CloseLoop_Run(FOC_CloseLoopState *state,
     DRV_EQEP_State eqepState;
     float timeStep;
     float positionError;
-    float torqueRef;
-    float torqueError;
     float voltageCommand;
     float voltageLimit;
     float supplyVoltage;
@@ -177,13 +150,8 @@ float FOC_CloseLoop_Run(FOC_CloseLoopState *state,
     positionError = state->targetPositionRad - eqepState.mechanicalAngleRad;
     positionError = FOC_CloseLoop_wrapAngleError(positionError);
 
-    // 位置 PI -> 输出目标力矩（或 q 轴电流），再根据设定力矩上限进行裁剪。
-    torqueRef = FOC_CloseLoop_runPI(&state->positionLoop, positionError, timeStep);
-    state->torqueCommand = FOC_clamp(torqueRef, -state->torqueLimit, state->torqueLimit);
-
-    // 力矩环的输入为目标力矩与当前 q 轴电压（近似力矩）之差，输出为电压命令。
-    torqueError = state->torqueCommand - handle->voltageDQ.q;
-    voltageCommand = FOC_CloseLoop_runPI(&state->torqueLoop, torqueError, timeStep);
+    // 位置 PI -> 直接输出 q 轴电压参考。
+    voltageCommand = FOC_CloseLoop_runPI(&state->positionLoop, positionError, timeStep);
 
     supplyVoltage = handle->config.voltagePowerSupply;
     if((state->voltageLimit > 0.0f) && isfinite(state->voltageLimit))
@@ -201,7 +169,7 @@ float FOC_CloseLoop_Run(FOC_CloseLoopState *state,
         voltageLimit = 0.0f;
     }
 
-    // 对力矩环输出的电压命令进行限幅，防止调制超出允许范围。
+    // 对位置 PI 输出的电压命令进行限幅，防止调制超出允许范围。
     voltageCommand = FOC_clamp(voltageCommand, -voltageLimit, voltageLimit);
 
     // 更新 FOC 句柄中的当前电角度以及 dq 轴电压，用于后续逆变换。
