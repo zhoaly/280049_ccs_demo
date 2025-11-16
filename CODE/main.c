@@ -93,29 +93,49 @@ void main(void)
 
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
-    static int i;
 
     while (1) {
-        i++;
+        
+        //  if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)//1ms
+        // {
+        //     // 收到通知后执行相应处理
+        //     GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
+        // }
+        
         vTaskDelay(pdTICKS_TO_MS(1000));
+
         //GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
+        // DRV_EQEP_update(0.01f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
+        // DRV_EQEP_getState(&eqepstate0);
     }
 }
 
+//
+// Timer0 中断服务程序
+//
+//可以作为时基?
+__interrupt void timer0_ISR( void )//100ms触发
+{
 
+    GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
+    //DRV_EPWM_getState(&epwmstate0);
+
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
+
+}
 
 //
 // Timer1 中断服务程序
 //
 //可以作为时基?
-__interrupt void timer1_ISR( void )
+__interrupt void timer1_ISR( void )//1ms触发
 {
-    //GPIO_togglePin(myLED1_GPIO);
-    GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
 
-    DRV_EPWM_getState(&epwmstate0);
-    DRV_EQEP_update(0.0f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
-    DRV_EQEP_getState(&eqepstate0);
+    //GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
+    
+    xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
+    //DRV_EPWM_getState(&epwmstate0);
+
 
 }
 

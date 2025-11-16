@@ -11,12 +11,12 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
 
-#define DRV_EQEP_DEFAULT_COUNTS_PER_REV   (16384UL)  /**< 默认磁编码器分辨率（14bit）。 */
-#define DRV_EQEP_DEFAULT_POLE_PAIRS       (1UL)      /**< 默认极对数。 指的是电机上用于检测位置的磁铁的极对数*/ 
-#define DRV_EQEP_GPIO_QEPA                (6U)
-#define DRV_EQEP_GPIO_QEPB                (7U)
-#define DRV_EQEP_GPIO_INDEX               (9U)
-#define DRV_EQEP_GPIO_STROBE              (8U)
+#define DRV_EQEP_DEFAULT_COUNTS_PER_REV   (4096L)  /**< 默认磁编码器分辨率（14bit）。 */
+#define DRV_EQEP_DEFAULT_POLE_PAIRS       (7UL)      /**< 默认极对数*/ 
+// #define DRV_EQEP_GPIO_QEPA                (6U)
+// #define DRV_EQEP_GPIO_QEPB                (7U)
+// #define DRV_EQEP_GPIO_INDEX               (9U)
+// #define DRV_EQEP_GPIO_STROBE              (8U)
 #define DRV_EQEP_TWO_PI                   (6.28318530717958647692f)
 
 typedef struct
@@ -231,7 +231,6 @@ void DRV_EQEP_update(float samplePeriodSeconds)
 
     mechanicalAngle = ((float)position / (float)s_state.countsPerRevolution) * DRV_EQEP_TWO_PI;
     s_state.mechanicalAngleRad = DRV_EQEP_normalizeAngle(mechanicalAngle);
-
     electricalAngle = s_state.mechanicalAngleRad * (float)s_state.polePairs;
     s_state.electricalAngleRad = DRV_EQEP_normalizeAngle(electricalAngle);
 

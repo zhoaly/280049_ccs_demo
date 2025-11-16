@@ -10,6 +10,7 @@
 #include "app_FOC.h"
 #include "app_FOC_OpenLoop.h"
 #include "drv_epwm.h"
+#include "drv_eqep.h"
 
 
 #include "c2000_freertos.h"
@@ -21,6 +22,9 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/pin_map.h"
 
+
+
+extern DRV_EQEP_State eqepstate0;
 /**
  * @brief 默认 FOC 句柄实例。
  *
@@ -97,16 +101,24 @@ void FOC_Task_Func(void * pvParameters){
 
     //在此临时实现,后续应使用计时器+信号量实现
     FOC_RunZeroCalibration(handle_FOC);
+    DRV_EQEP_resetPosition();
     vTaskDelay(pdMS_TO_TICKS(1000));//200ms矫正
 
-    while(1){//待添加零位校准逻辑
+    while(1){
 
-        //GPIO_togglePin(myLED1_GPIO);
-        vTaskDelay(pdMS_TO_TICKS(1));//1ms
+        if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)//1ms
+        {
+            GPIO_togglePin(myLED2_GPIO);
+
+            FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
+            DRV_EQEP_update(0.001f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
+            DRV_EQEP_getState(&eqepstate0);
+            GPIO_togglePin(myLED2_GPIO);
+        }
+
+        //vTaskDelay(pdMS_TO_TICKS(1));//1ms
         //暂时实现开环
-        
-
-        FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
+        //FOC_OpenLoop_RunVelocity(handle_OpenLoop_State,handle_FOC,20);
     }
 
 }
