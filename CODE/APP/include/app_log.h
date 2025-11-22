@@ -74,7 +74,7 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
 /**
  * @brief 日志任务入口函数，使用 SysCfg 配置的任务创建。
  */
-void APP_LOG_Task(void *pvParameters);
+void LOG_Task_Func(void *pvParameters);
 
 /* 一组便捷宏，模仿 ESP_LOGX(TAG, ...) 用法 */
 #define APP_LOGE(TAG, fmt, ...)  \
