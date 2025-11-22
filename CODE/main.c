@@ -28,8 +28,10 @@ void FOC_Task_Func(void * pvParameters);
 //
 // Timer1 中断服务程序
 //
-__interrupt void timer1_ISR(void);
-
+__interrupt void timer1_ISR( void );
+__interrupt void timer0_ISR( void );
+__interrupt void INT_mySCI0_RX_ISR( void );
+__interrupt void INT_mySCI0_TX_ISR( void );
 //
 // 主函数
 //
@@ -137,6 +139,24 @@ __interrupt void timer1_ISR( void )//1ms触发
     //DRV_EPWM_getState(&epwmstate0);
 
 
+}
+
+__interrupt void INT_mySCI0_RX_ISR( void )
+{
+    SCI_clearInterruptStatus(mySCI0_BASE,
+                            SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
+                            SCI_INT_PE   | SCI_INT_RXERR);
+
+    // 清 PIE Group9 的 ACK（SCIA 的中断在 Group9）
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
+}
+__interrupt void INT_mySCI0_TX_ISR( void )
+{
+    // 清除 TX FIFO 中断标志
+    SCI_clearInterruptStatus(mySCI0_BASE, SCI_INT_TXFF);
+
+    // 清 PIE Group9 ACK
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 }
 
 

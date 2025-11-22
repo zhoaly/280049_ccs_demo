@@ -13,6 +13,7 @@
 #define APP_FOC_H
 
 #include <stdint.h>
+#include "driverlib.h"
 
 #include <stdbool.h>
 
