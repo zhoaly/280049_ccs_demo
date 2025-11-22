@@ -22,6 +22,8 @@ const gpio           = scripting.addModule("/driverlib/gpio.js", {}, false);
 const gpio3          = gpio.addInstance();
 const gpio4          = gpio.addInstance();
 const gpio5          = gpio.addInstance();
+const sci            = scripting.addModule("/driverlib/sci.js", {}, false);
+const sci1           = sci.addInstance();
 const FREERTOS       = scripting.addModule("/kernel/freertos_tool/FREERTOS", {}, false);
 const FREERTOS1      = FREERTOS.addInstance();
 
@@ -84,6 +86,13 @@ gpio5.$name           = "FOC_DRV_EN3";
 gpio5.direction       = "GPIO_DIR_MODE_OUT";
 gpio5.gpioPin.$assign = "GPIO9";
 
+sci1.$name                      = "mySCI0";
+sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
+sci1.enabledFIFOInterrupts      = ["SCI_INT_RXFF","SCI_INT_TXFF"];
+sci1.enabledErrorInterrupts     = ["SCI_INT_FE","SCI_INT_OE","SCI_INT_PE","SCI_INT_RXERR"];
+sci1.rxQual.$name               = "myGPIOQUAL0";
+sci1.txQual.$name               = "myGPIOQUAL1";
+
 FREERTOS1.$name                    = "myFREERTOS0";
 FREERTOS1.MINIMAL_STACK_SIZE       = 256;
 FREERTOS1.USE_MUTEXES              = true;
@@ -98,3 +107,12 @@ FREERTOS1.tasks[1].$name           = "FOC_Task";
 FREERTOS1.tasks[1].taskPointer     = "FOC_Task_Func";
 FREERTOS1.semaphores.create(1);
 FREERTOS1.semaphores[0].$name      = "TimeBase_Semaphore";
+
+/**
+ * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
+ * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
+ * re-solve from scratch.
+ */
+sci1.sci.$suggestSolution           = "SCIA";
+sci1.sci.sci_rxPin.$suggestSolution = "GPIO17";
+sci1.sci.sci_txPin.$suggestSolution = "GPIO16";
