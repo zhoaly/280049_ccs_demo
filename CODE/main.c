@@ -27,7 +27,7 @@ void ePWMConfigurationTemplate(uint32_t base);
 void myTask0_func(void * pvParameters);
 void FOC_Task_Func(void * pvParameters);
 //
-// Timer1 中断服务程序
+// Timer1,0 中断服务程序
 //
 __interrupt void timer1_ISR( void );
 __interrupt void timer0_ISR( void );

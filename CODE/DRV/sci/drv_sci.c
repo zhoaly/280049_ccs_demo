@@ -41,6 +41,9 @@ static DRV_SCI_Internal s_sci =
     }
 };
 
+
+
+
 #if !DRV_SCI_USE_SYSCFG
 static void DRV_SCI_enableModuleClock(void)
 {
@@ -156,12 +159,137 @@ void DRV_SCI_getState(DRV_SCI_State *state)
     *state = s_sci.state;
 }
 
+
+/**
+ * @brief 从 SCI0 环形缓冲区读取最多 len 个字节（非阻塞，低 8 位有效）。
+ *
+ * @param[out] pBuf  输出缓冲区指针（uint16_t 数组，每项低 8 位为有效字节）
+ * @param[in]  len   期望读取的最大字节数
+ *
+ * @return 实际读取到的字节数（0 表示当前无数据）
+ *
+ * @note  该函数与 TX 写函数风格对齐：
+ *        - for 循环按 len 尝试读取；
+ *        - 每次循环快照 head/tail；
+ *        - 缓冲区空（tail == head）则提前 break；
+ *        - 函数返回实际读取的数量。
+ */
+uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len)
+{
+    uint16_t i;
+    uint16_t head;
+    uint16_t tail;
+
+    if ((pBuf == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        /* 快照当前指针 */
+        tail = s_sci0RxTail;
+        head = s_sci0RxHead;
+
+        /* 缓冲区为空：head == tail，提前退出 */
+        if (tail == head)
+        {
+            break;
+        }
+
+        /* 取出 1 个字节（低 8 位有效） */
+        pBuf[i] = s_sci0RxBuf[tail] & 0x00FFU;
+
+        /* 推进读指针 */
+        s_sci0RxTail = nextIndex(tail, SCI0_RX_BUF_LEN);
+    }
+
+    return i;
+}
+
+
+
+/**
+ * @brief 向 SCI0 发送环形缓冲区写入数据（低 8 位为有效字节）。
+ *
+ * @param[in] pData  数据缓冲区指针（每个 Uint16 的低 8 位为一个字节）
+ * @param[in] len    待写入的字节数
+ *
+ * @return 实际写入缓冲区的字节数（可能小于 len，表示缓冲区已满）
+ *
+ * 说明：
+ * - 假设只有一个任务调用本函数写入（单生产者），中断为单消费者。
+ * - 本函数为“非阻塞”写入，如果缓冲区满，会提前退出。
+ * - 若实际写入长度 > 0，会打开 TX FIFO 中断，触发中断发送。
+ */
+uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
+{
+    uint16_t head;
+    uint16_t tail;
+    uint16_t nextHead;
+    uint16_t i = 0U;
+
+    if ((pData == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        head = s_sci0TxHead;
+        tail = s_sci0TxTail;
+
+        nextHead = nextIndex(head,SCI0_TX_BUF_LEN);
+
+        // 缓冲区已满：下一个 head 等于 tail(这里留了一个位置作为哨兵空位)
+        if (nextHead == tail)
+        {
+            break;  // 已经写满，退出循环
+        }
+
+        // 写入 1 字节，低 8 位有效
+        s_sci0TxBuf[head] = pData[i] & 0x00FFU;
+        s_sci0TxHead      = nextHead;
+    }
+
+    // 如果写入了至少 1 个字节，则打开 TX FIFO 中断，由中断继续发送
+    // 保护性判断,当且仅当写入时缓冲区满时,不进入此分支
+    if (i > 0U)
+    {
+        SCI_enableInterrupt(mySCI0_BASE, SCI_INT_TXFF);
+    }
+
+    return i;
+}
+
+
 __interrupt void INT_mySCI0_RX_ISR(void)
 {
+    uint16_t head;
+    uint16_t fifoStatus;//fifo状态临时变量
+    uint16_t data;//临时变量
+
     if(s_sci.state.onRx != NULL)
     {
         s_sci.state.onRx();
     }
+
+//以下是接收逻辑
+
+    // 把 FIFO 里当前所有字节都读出来，放进环形缓冲区
+    do
+    {
+        fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+        if (fifoStatus != SCI_FIFO_RX0)      // FIFO 非空
+        {
+            data = SCI_readCharBlockingFIFO(mySCI0_BASE);
+            head = nextIndex(s_sci0RxHead, SCI0_RX_BUF_LEN);
+
+            s_sci0RxBuf[s_sci0RxHead] = data;
+            s_sci0RxHead = head;
+        }
+    } while (fifoStatus != SCI_FIFO_RX0);
+
 
 #if DRV_SCI_USE_SYSCFG
     SCI_clearInterruptStatus(mySCI0_BASE,
@@ -176,11 +304,50 @@ __interrupt void INT_mySCI0_RX_ISR(void)
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 }
 
+
 __interrupt void INT_mySCI0_TX_ISR(void)
 {
+    uint16_t head;
+    uint16_t tail;
+    uint16_t fifoStatus;
+    uint16_t data;
+
     if(s_sci.state.onTx != NULL)
     {
         s_sci.state.onTx();
+    }
+
+//以下是发送逻辑
+    // 快照当前 head / tail
+    head = s_sci0TxHead;
+    tail = s_sci0TxTail;
+
+    // 只要 FIFO 未满 且 缓冲区中还有数据，就不断填充 FIFO
+    while (tail != head)
+    {
+        fifoStatus = SCI_getTxFIFOStatus(mySCI0_BASE);
+
+        // FIFO 已满，无法再写，提前退出
+        if (fifoStatus == SCI_FIFO_TX16)
+        {
+            break;
+        }
+
+        // 取出一个待发送字节（低 8 位有效）
+        data = s_sci0TxBuf[tail] & 0x00FFU;
+        tail = nextIndex(tail,SCI0_TX_BUF_LEN);
+
+        // 写入 TX FIFO（非阻塞）
+        SCI_writeCharNonBlocking(mySCI0_BASE, data);
+    }
+
+    // 更新全局 tail 指针
+    s_sci0TxTail = tail;
+
+    // 如果缓冲区已经空了，则关掉 TX FIFO 中断，防止 FIFO 空时产生持续中断
+    if (tail == s_sci0TxHead)
+    {
+        SCI_disableInterrupt(mySCI0_BASE, SCI_INT_TXFF);
     }
 
 #if DRV_SCI_USE_SYSCFG

@@ -1,6 +1,7 @@
 /**
  * @file drv_sci.h
  * @brief SCI 驱动接口，提供串口初始化、收发与中断回调注册能力。
+ * 当前版本代码里,为实现对SCI的原子化操作,应当在调用时,自行使用信号量等措施
  */
 
 #ifndef DRV_SCI_H
@@ -14,6 +15,36 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//SCI邮箱(两个环形缓冲区)
+#define SCI0_RX_BUF_LEN   128U
+#define SCI0_TX_BUF_LEN   128U
+
+static volatile uint16_t  s_sci0RxBuf[SCI0_RX_BUF_LEN];
+static volatile uint16_t s_sci0RxHead = 0;//头指针 写指针
+static volatile uint16_t s_sci0RxTail = 0;//尾指针 读指针
+
+static volatile uint16_t  s_sci0TxBuf[SCI0_TX_BUF_LEN];
+static volatile uint16_t s_sci0TxHead = 0;//头指针 写指针
+static volatile uint16_t s_sci0TxTail = 0;//尾指针 读指针
+
+
+
+/**
+ * @brief SCI 缓冲区环形标准进位。
+ * @param[in] idx 待进位序号。
+ * @param[in] len buf总长度。
+ */
+static inline uint16_t nextIndex(uint16_t idx, uint16_t len)
+{
+    ++idx;
+    if (idx >= len)
+    {
+        idx = 0;
+    }
+    return idx;
+}
+
 
 /**
  * @brief SCI 中断回调函数指针类型。
@@ -69,6 +100,37 @@ bool DRV_SCI_writeChar(uint16_t data);
  * @param[out] state 状态输出指针，不能为空。
  */
 void DRV_SCI_getState(DRV_SCI_State *state);
+
+/**
+ * @brief 从 SCI0 环形缓冲区读取最多 len 个字节（非阻塞，低 8 位有效）。
+ *
+ * @param[out] pBuf  输出缓冲区指针（uint16_t 数组，每项低 8 位为有效字节）
+ * @param[in]  len   期望读取的最大字节数
+ *
+ * @return 实际读取到的字节数（0 表示当前无数据）
+ *
+ * @note  该函数与 TX 写函数风格对齐：
+ *        - for 循环按 len 尝试读取；
+ *        - 每次循环快照 head/tail；
+ *        - 缓冲区空（tail == head）则提前 break；
+ *        - 函数返回实际读取的数量。
+ */
+uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len);
+
+/**
+ * @brief 向 SCI0 发送环形缓冲区写入数据（低 8 位为有效字节）。
+ *
+ * @param[in] pData  数据缓冲区指针（每个 Uint16 的低 8 位为一个字节）
+ * @param[in] len    待写入的字节数
+ *
+ * @return 实际写入缓冲区的字节数（可能小于 len，表示缓冲区已满）
+ *
+ * @note
+ * - 假设只有一个任务调用本函数写入（单生产者），中断为单消费者。
+ * - 本函数为“非阻塞”写入，如果缓冲区满，会提前退出。
+ * - 若实际写入长度 > 0，会打开 TX FIFO 中断，触发中断发送。
+ */
+uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len);
 
 /**
  * @brief SCI RX 中断服务函数，由 SysCfg 配置引用。
