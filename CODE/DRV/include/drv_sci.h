@@ -20,14 +20,16 @@ extern "C" {
 #define SCI0_RX_BUF_LEN   128U
 #define SCI0_TX_BUF_LEN   128U
 
-static volatile uint16_t  s_sci0RxBuf[SCI0_RX_BUF_LEN];
-static volatile uint16_t s_sci0RxHead = 0;//头指针 写指针
-static volatile uint16_t s_sci0RxTail = 0;//尾指针 读指针
-
-static volatile uint16_t  s_sci0TxBuf[SCI0_TX_BUF_LEN];
-static volatile uint16_t s_sci0TxHead = 0;//头指针 写指针
-static volatile uint16_t s_sci0TxTail = 0;//尾指针 读指针
-
+/**
+ * @brief SCI 环形缓冲区抽象。
+ */
+typedef struct
+{
+    volatile uint16_t *buffer; /**< 实际存储空间指针。*/
+    uint16_t           length; /**< 缓冲区总长度。*/
+    volatile uint16_t  head;   /**< 写指针。*/
+    volatile uint16_t  tail;   /**< 读指针。*/
+} DRV_SCI_RingBuffer;
 
 
 /**

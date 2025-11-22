@@ -41,6 +41,25 @@ static DRV_SCI_Internal s_sci =
     }
 };
 
+static volatile uint16_t s_sci0RxStorage[SCI0_RX_BUF_LEN];
+static volatile uint16_t s_sci0TxStorage[SCI0_TX_BUF_LEN];
+
+static DRV_SCI_RingBuffer s_sci0RxQueue =
+{
+    .buffer = s_sci0RxStorage,
+    .length = SCI0_RX_BUF_LEN,
+    .head   = 0U,
+    .tail   = 0U,
+};
+
+static DRV_SCI_RingBuffer s_sci0TxQueue =
+{
+    .buffer = s_sci0TxStorage,
+    .length = SCI0_TX_BUF_LEN,
+    .head   = 0U,
+    .tail   = 0U,
+};
+
 
 
 
@@ -188,8 +207,8 @@ uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len)
     for (i = 0U; i < len; i++)
     {
         /* 快照当前指针 */
-        tail = s_sci0RxTail;
-        head = s_sci0RxHead;
+        tail = s_sci0RxQueue.tail;
+        head = s_sci0RxQueue.head;
 
         /* 缓冲区为空：head == tail，提前退出 */
         if (tail == head)
@@ -198,10 +217,10 @@ uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len)
         }
 
         /* 取出 1 个字节（低 8 位有效） */
-        pBuf[i] = s_sci0RxBuf[tail] & 0x00FFU;
+        pBuf[i] = s_sci0RxQueue.buffer[tail] & 0x00FFU;
 
         /* 推进读指针 */
-        s_sci0RxTail = nextIndex(tail, SCI0_RX_BUF_LEN);
+        s_sci0RxQueue.tail = nextIndex(tail, s_sci0RxQueue.length);
     }
 
     return i;
@@ -236,10 +255,10 @@ uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
 
     for (i = 0U; i < len; i++)
     {
-        head = s_sci0TxHead;
-        tail = s_sci0TxTail;
+        head = s_sci0TxQueue.head;
+        tail = s_sci0TxQueue.tail;
 
-        nextHead = nextIndex(head,SCI0_TX_BUF_LEN);
+        nextHead = nextIndex(head, s_sci0TxQueue.length);
 
         // 缓冲区已满：下一个 head 等于 tail(这里留了一个位置作为哨兵空位)
         if (nextHead == tail)
@@ -248,8 +267,8 @@ uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
         }
 
         // 写入 1 字节，低 8 位有效
-        s_sci0TxBuf[head] = pData[i] & 0x00FFU;
-        s_sci0TxHead      = nextHead;
+        s_sci0TxQueue.buffer[head] = pData[i] & 0x00FFU;
+        s_sci0TxQueue.head         = nextHead;
     }
 
     // 如果写入了至少 1 个字节，则打开 TX FIFO 中断，由中断继续发送
@@ -283,10 +302,10 @@ __interrupt void INT_mySCI0_RX_ISR(void)
         if (fifoStatus != SCI_FIFO_RX0)      // FIFO 非空
         {
             data = SCI_readCharBlockingFIFO(mySCI0_BASE);
-            head = nextIndex(s_sci0RxHead, SCI0_RX_BUF_LEN);
+            head = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
 
-            s_sci0RxBuf[s_sci0RxHead] = data;
-            s_sci0RxHead = head;
+            s_sci0RxQueue.buffer[s_sci0RxQueue.head] = data;
+            s_sci0RxQueue.head = head;
         }
     } while (fifoStatus != SCI_FIFO_RX0);
 
@@ -319,8 +338,8 @@ __interrupt void INT_mySCI0_TX_ISR(void)
 
 //以下是发送逻辑
     // 快照当前 head / tail
-    head = s_sci0TxHead;
-    tail = s_sci0TxTail;
+    head = s_sci0TxQueue.head;
+    tail = s_sci0TxQueue.tail;
 
     // 只要 FIFO 未满 且 缓冲区中还有数据，就不断填充 FIFO
     while (tail != head)
@@ -334,18 +353,18 @@ __interrupt void INT_mySCI0_TX_ISR(void)
         }
 
         // 取出一个待发送字节（低 8 位有效）
-        data = s_sci0TxBuf[tail] & 0x00FFU;
-        tail = nextIndex(tail,SCI0_TX_BUF_LEN);
+        data = s_sci0TxQueue.buffer[tail] & 0x00FFU;
+        tail = nextIndex(tail, s_sci0TxQueue.length);
 
         // 写入 TX FIFO（非阻塞）
         SCI_writeCharNonBlocking(mySCI0_BASE, data);
     }
 
     // 更新全局 tail 指针
-    s_sci0TxTail = tail;
+    s_sci0TxQueue.tail = tail;
 
     // 如果缓冲区已经空了，则关掉 TX FIFO 中断，防止 FIFO 空时产生持续中断
-    if (tail == s_sci0TxHead)
+    if (tail == s_sci0TxQueue.head)
     {
         SCI_disableInterrupt(mySCI0_BASE, SCI_INT_TXFF);
     }
