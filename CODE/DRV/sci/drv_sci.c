@@ -203,12 +203,12 @@ uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len)
     {
         return 0U;
     }
-
+    
     for (i = 0U; i < len; i++)
     {
         /* 快照当前指针 */
-        tail = s_sci0RxQueue.tail;
         head = s_sci0RxQueue.head;
+        tail = s_sci0RxQueue.tail;
 
         /* 缓冲区为空：head == tail，提前退出 */
         if (tail == head)
@@ -253,6 +253,8 @@ uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
         return 0U;
     }
 
+
+    
     for (i = 0U; i < len; i++)
     {
         head = s_sci0TxQueue.head;

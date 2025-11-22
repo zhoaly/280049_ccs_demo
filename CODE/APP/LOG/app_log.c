@@ -58,7 +58,8 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
     logMessage.tag   = tag;
 
     va_start(args, fmt);
-    (void)vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);
+    //vsnprintf 会根据 fmt 和 args，把格式化后的字符串写入 logMessage.message
+    (void)vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);//
     va_end(args);
     logMessage.message[APP_LOG_MESSAGE_MAX_LEN - 1U] = '\0';
 
@@ -69,7 +70,7 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
                          pdMS_TO_TICKS(APP_LOG_QUEUE_TIMEOUT_MS));
         if (ret == pdPASS)
         {
-            return ret;
+            return ret;//队列可用时,直接在这里返回
         }
     }
 
@@ -78,23 +79,29 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
     return pdPASS;
 }
 
-void APP_LOG_Task(void *pvParameters)
+void LOG_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
     APP_LogMessage logMessage;
 
+    while (APP_LOG_QueueHandle == NULL)
+    {
+        /* 队列还没创建好，适当让出 CPU（比如 1ms） */
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+
+    QueueHandle_t queue = (QueueHandle_t)APP_LOG_QueueHandle;
+
     for (;;)
     {
-        if ((APP_LOG_QueueHandle != NULL) &&
-            (xQueueReceive(APP_LOG_QueueHandle, &logMessage, portMAX_DELAY) == pdPASS))
+        /* 阻塞等待一条日志消息，不需要额外延时 */
+        if (xQueueReceive(queue, &logMessage, portMAX_DELAY) == pdPASS)
         {
-            APP_LOG_outputLine(logMessage.level, logMessage.tag, logMessage.message);
+            APP_LOG_outputLine(logMessage.level,
+                               logMessage.tag,
+                               logMessage.message);
         }
-        else
-        {
-            /* 队列尚未就绪时保持低功耗等待。 */
-            vTaskDelay(pdMS_TO_TICKS(1));
-        }
+        /* 若返回值不是 pdPASS，一般意味着严重错误，可视情况加上断言或错误计数 */
     }
 }
 
@@ -111,30 +118,45 @@ static const char *APP_LOG_levelStr(app_log_level_t level)
     }
 }
 
+/**
+ * @brief 通过 SCI 发送一整段字符串（按固定片长切片发送）。
+ *
+ * 该函数不直接逐字节写硬件，而是：
+ * 1. 将输入字符串按 APP_LOG_TX_SLICE_LEN 为最大长度分片；
+ * 2. 将每一片拷贝到临时 uint16_t 缓冲区（低 8 位为有效字符）；
+ * 3. 调用 DRV_SCI0_TxWriteBytes 写入 SCI 发送环形缓冲区，
+ *    由底层 SCI TX 中断机制完成最终发送。
+ *
+ * @param[in] str 待发送的字符串指针
+ * @param[in] len 字符串长度（不含 '\0'）
+ */
 static void APP_LOG_flushString(const char *str, size_t len)
 {
-    uint16_t txBuf[APP_LOG_TX_SLICE_LEN];
-    size_t offset = 0U;
+    size_t offset = 0U;                    /**< 已经发送/处理的字符串偏移量 */
 
+    /* 只要还有未处理的数据，就持续循环发送 */
     while (offset < len)
     {
-        size_t sliceLen = len - offset;
-        size_t i;
+        size_t sliceLen = len - offset;    /**< 本次准备发送的数据长度（先按剩余长度计算） */
 
+
+        /* 若剩余长度大于单次发送上限，则本次仅发送 APP_LOG_TX_SLICE_LEN 个字符 */
         if (sliceLen > APP_LOG_TX_SLICE_LEN)
         {
             sliceLen = APP_LOG_TX_SLICE_LEN;
         }
 
-        for (i = 0U; i < sliceLen; i++)
-        {
-            txBuf[i] = (uint16_t)str[offset + i];
-        }
+       /* 直接把 char 缓冲区视为 uint16_t 缓冲区使用，避免逐字节拷贝 */
+        (void)DRV_SCI0_TxWriteBytes(
+            (const uint16_t *)(const void *)(str + offset),
+            (uint16_t)sliceLen
+        );
 
-        (void)DRV_SCI0_TxWriteBytes(txBuf, (uint16_t)sliceLen);
+        /* 更新偏移量，指向下一段待发送数据的起始位置 */
         offset += sliceLen;
     }
 }
+
 
 static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const char *payload)
 {
@@ -146,7 +168,7 @@ static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const cha
     {
         tag = "APP";
     }
-
+    //统一报告格式:"[<level_str>][<tag>] <payload>\r\n"
     written = snprintf(buffer,
                        sizeof(buffer),
                        "[%s][%s] %s\r\n",
