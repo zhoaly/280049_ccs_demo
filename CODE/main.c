@@ -102,12 +102,16 @@ void myTask0_func(void * pvParameters){
 
         
         vTaskDelay(pdTICKS_TO_MS(1000));
-        // APP_LOGI("main", "hellow %d \n",10);
-        APP_LOGI("main", "hellow\n");
-        // DRV_SCI_writeChar('a');
-        // DRV_SCI0_TxWriteBytes(text,10);
-   
-        // APP_LOGI("1", " idle stack : %d\n",10);
+       // APP_LOGI("main", "hellow %f \n",10.0);
+        UBaseType_t watermarkWords1 = uxTaskGetStackHighWaterMark(NULL);//单位word
+        UBaseType_t watermarkWords2 = uxTaskGetStackHighWaterMark(FOC_TaskHandle);//单位word
+        UBaseType_t watermarkWords3 = uxTaskGetStackHighWaterMark(LOG_TaskHandle);//单位word
+        
+        APP_LOGI("main", "task0 : %d \n",watermarkWords1);
+        APP_LOGI("main", "FOC : %d \n",watermarkWords2);
+        APP_LOGI("main", "LOG : %d \n",watermarkWords3);
+        //  APP_LOGI("main", "hellow");
+        //DRV_SCI0_TxWriteBytes(text,10);
 
         GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
 
@@ -124,9 +128,7 @@ __interrupt void timer0_ISR( void )//100ms触发
     GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
     
     //DRV_EPWM_getState(&epwmstate0);
-
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
-   
 }
 
 //
@@ -156,7 +158,7 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     如果检测到堆栈溢出，将调用此钩子函数。 */
 
     GPIO_writePin(myLED1_GPIO,0);
-    GPIO_writePin(myLED2_GPIO,0);//栈溢出标志 两灯常亮
+    GPIO_writePin(myLED2_GPIO,0);//栈溢出标志 灭灯
     
     taskDISABLE_INTERRUPTS();
     for( ;; );

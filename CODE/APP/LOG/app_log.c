@@ -5,6 +5,7 @@
 
 #include "app_log.h"
 #include "drv_sci.h"
+#include "app_log_vsnprintf.h"  
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -60,13 +61,13 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
     va_start(args, fmt);
     //vsnprintf 会根据 fmt 和 args，把格式化后的字符串写入 logMessage.message
     (void)vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);//
+    // (void)APP_LOG_vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);//
     va_end(args);
     logMessage.message[APP_LOG_MESSAGE_MAX_LEN - 1U] = '\0';
 
     if (APP_LOG_QueueHandle != NULL)
     {
-        //todo
-        //APP_LOG_outputLine(logMessage.level, logMessage.tag, logMessage.message);
+        // ret = pdPASS;
         ret = xQueueSend(APP_LOG_QueueHandle,
                          &logMessage,
                          pdMS_TO_TICKS(APP_LOG_QUEUE_TIMEOUT_MS));
@@ -170,7 +171,7 @@ static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const cha
     {
         tag = "APP";
     }
-    //统一报告格式:"[<level_str>][<tag>] <payload>\r\n"
+    // 统一报告格式:"[<level_str>][<tag>] <payload>\r\n"
     written = snprintf(buffer,
                        sizeof(buffer),
                        "[%s][%s] %s\r\n",
@@ -192,3 +193,7 @@ static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const cha
 
     APP_LOG_flushString(buffer, len);
 }
+
+
+
+
