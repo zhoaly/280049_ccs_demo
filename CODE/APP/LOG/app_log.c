@@ -96,7 +96,7 @@ BaseType_t APP_LOG_WriteArgs(app_log_level_t level,
     }
 
     /* 队列不可用或发送失败时，直接在当前任务中同步格式化并输出。 */
-    APP_LOG_outputFormatted(&logMessage);
+    //APP_LOG_outputFormatted(&logMessage);
     return pdPASS;
 }
 

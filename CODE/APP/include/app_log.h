@@ -150,15 +150,18 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX1(LEVEL, TAG, fmt, a1)                                  \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[1] = { (a1) };                             \
+            APP_LogArg _args[1];                                        \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 1U, _args);            \
         }                                                               \
     } while (0)
 
+
 #define APP_LOGX2(LEVEL, TAG, fmt, a1, a2)                              \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[2] = { (a1), (a2) };                       \
+            APP_LogArg _args[2] = {  APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),};                       \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 2U, _args);            \
         }                                                               \
     } while (0)
@@ -166,7 +169,7 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX3(LEVEL, TAG, fmt, a1, a2, a3)                          \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[3] = { (a1), (a2), (a3) };                 \
+            APP_LogArg _args[3] = {  APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),  APP_LOG_ARG_I(a3) ,};                 \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 3U, _args);            \
         }                                                               \
     } while (0)
@@ -174,7 +177,7 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX4(LEVEL, TAG, fmt, a1, a2, a3, a4)                      \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[4] = { (a1), (a2), (a3), (a4) };           \
+            APP_LogArg _args[4] = { APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),  APP_LOG_ARG_I(a3), APP_LOG_ARG_I(a4) ,};           \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 4U, _args);            \
         }                                                               \
     } while (0)
