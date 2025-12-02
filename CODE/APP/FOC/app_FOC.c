@@ -79,25 +79,11 @@ float FOC_clamp(float value, float minValue, float maxValue)
  */
 void FOC_Task_Func(void * pvParameters){
 
-    FOC_Handle *handle_FOC = (FOC_Handle *)pvParameters;
-    FOC_OpenLoopState *handle_OpenLoop_State = (FOC_OpenLoopState *)pvParameters;
-    FOC_CloseLoopState *handle_CloseLoop_State = (FOC_CloseLoopState *)pvParameters;
+    (void)pvParameters;   // 防止编译告警
 
-
-    if(handle_FOC == NULL)//null的异常处理
-    {
-        handle_FOC = &s_focHandle;
-    }
-
-    if(handle_OpenLoop_State == NULL)//null的异常处理
-    {
-        handle_OpenLoop_State = &s_focOpenLoopHandle;
-    }
-
-    if(handle_CloseLoop_State == NULL)
-    {
-        handle_CloseLoop_State = &s_focCloseLoopHandle;
-    }
+    FOC_Handle        *handle_FOC            = &s_focHandle;
+    FOC_OpenLoopState *handle_OpenLoop_State = &s_focOpenLoopHandle;
+    FOC_CloseLoopState *handle_CloseLoop_State = &s_focCloseLoopHandle;
 
     FOC_HandleInit(handle_FOC);
     FOC_OpenLoop_Init(handle_OpenLoop_State,7);//六极对
@@ -119,20 +105,19 @@ void FOC_Task_Func(void * pvParameters){
     vTaskDelay(pdMS_TO_TICKS(1000));//200ms矫正
 
     while(1){
-
-        if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)//1ms
+        if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)
         {
-            GPIO_togglePin(myLED2_GPIO);
+            //GPIO_togglePin(myLED2_GPIO);
 
-            (void)FOC_CloseLoop_Run(handle_CloseLoop_State, handle_FOC, 0.001f);
+            //(void)FOC_CloseLoop_Run(handle_CloseLoop_State, handle_FOC, 0.001f);
 
-            const DRV_EQEP_State *latestState =
-                FOC_CloseLoop_GetLatestMeasurement(handle_CloseLoop_State);
-            if(latestState != NULL)
-            {
-                eqepstate0 = *latestState;
-            }
-            GPIO_togglePin(myLED2_GPIO);
+            // const DRV_EQEP_State *latestState =
+            //     FOC_CloseLoop_GetLatestMeasurement(handle_CloseLoop_State);
+            // if(latestState != NULL)
+            // {
+            //     eqepstate0 = *latestState;
+            // }
+            //GPIO_togglePin(myLED2_GPIO);
         }
 
         //vTaskDelay(pdMS_TO_TICKS(1));//1ms

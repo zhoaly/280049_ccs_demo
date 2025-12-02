@@ -88,31 +88,35 @@ gpio5.gpioPin.$assign = "GPIO9";
 
 sci1.$name                      = "mySCI0";
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
-sci1.enabledFIFOInterrupts      = ["SCI_INT_RXFF","SCI_INT_TXFF"];
 sci1.enabledErrorInterrupts     = ["SCI_INT_FE","SCI_INT_OE","SCI_INT_PE","SCI_INT_RXERR"];
 sci1.rxQual.$name               = "myGPIOQUAL0";
 sci1.txQual.$name               = "myGPIOQUAL1";
+sci1.sciTXInt.enableInterrupt   = true;
 
-FREERTOS1.$name                    = "myFREERTOS0";
-FREERTOS1.MINIMAL_STACK_SIZE       = 256;
-FREERTOS1.USE_MUTEXES              = true;
-FREERTOS1.USE_RECURSIVE_MUTEXES    = true;
-FREERTOS1.USE_COUNTING_SEMAPHORES  = true;
-FREERTOS1.vTaskSuspend             = false;
-FREERTOS1.CHECK_FOR_STACK_OVERFLOW = 1;
+FREERTOS1.$name                       = "myFREERTOS0";
+FREERTOS1.MINIMAL_STACK_SIZE          = 256;
+FREERTOS1.USE_MUTEXES                 = true;
+FREERTOS1.USE_RECURSIVE_MUTEXES       = true;
+FREERTOS1.USE_COUNTING_SEMAPHORES     = true;
+FREERTOS1.vTaskSuspend                = false;
+FREERTOS1.CHECK_FOR_STACK_OVERFLOW    = 1;
+FREERTOS1.uxTaskGetStackHighWaterMark = true;
 FREERTOS1.tasks.create(3);
-FREERTOS1.tasks[0].$name           = "myTask0";
-FREERTOS1.tasks[0].taskPointer     = "myTask0_func";
-FREERTOS1.tasks[1].$name           = "FOC_Task";
-FREERTOS1.tasks[1].taskPointer     = "FOC_Task_Func";
-FREERTOS1.tasks[2].$name           = "LOG_Task";
-FREERTOS1.tasks[2].taskStackSize   = 256;
-FREERTOS1.tasks[2].taskPointer     = "LOG_Task_Func";
+FREERTOS1.tasks[0].$name              = "myTask0";
+FREERTOS1.tasks[0].taskPointer        = "myTask0_func";
+FREERTOS1.tasks[0].taskStackSize      = 512;
+FREERTOS1.tasks[1].$name              = "FOC_Task";
+FREERTOS1.tasks[1].taskPointer        = "FOC_Task_Func";
+FREERTOS1.tasks[1].taskStackSize      = 512;
+FREERTOS1.tasks[2].$name              = "LOG_Task";
+FREERTOS1.tasks[2].taskPointer        = "LOG_Task_Func";
+FREERTOS1.tasks[2].taskStackSize      = 512;
 FREERTOS1.semaphores.create(1);
-FREERTOS1.semaphores[0].$name      = "TimeBase_Semaphore";
+FREERTOS1.semaphores[0].$name         = "TimeBase_Semaphore";
 FREERTOS1.queues.create(1);
-FREERTOS1.queues[0].queueLength    = 10;
-FREERTOS1.queues[0].$name          = "APP_LOG_Queue";
+FREERTOS1.queues[0].queueLength       = 10;
+FREERTOS1.queues[0].$name             = "APP_LOG_Queue";
+FREERTOS1.queues[0].queueItemSize     = "100";
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

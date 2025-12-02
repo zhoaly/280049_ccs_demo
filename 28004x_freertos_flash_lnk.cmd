@@ -89,11 +89,15 @@ SECTIONS
 
 #if defined(__TI_EABI__)
    .init_array      : > FLASH_BANK0_SEC1,       PAGE = 0,       ALIGN(4)
-   .bss             : > RAMLS5,       PAGE = 1
+   // .bss             : > RAMLS5,       PAGE = 1
    .bss:output      : > RAMLS3,       PAGE = 0
    .bss:cio         : > RAMLS0,       PAGE = 0
-   .data            : > RAMLS5,       PAGE = 1
-   .sysmem          : > RAMLS5,       PAGE = 1
+   // .data            : > RAMLS5,       PAGE = 1
+   // .sysmem          : > RAMLS5,       PAGE = 1
+   .bss      : >> RAMLS5 | RAMLS6 | RAMLS7, PAGE = 1
+   .data     : >> RAMLS5 | RAMLS6 | RAMLS7, PAGE = 1
+   .sysmem   : >  RAMLS6 | RAMLS7,          PAGE = 1
+
    /* Initalized sections go in Flash */
    .const           : > FLASH_BANK0_SEC4,       PAGE = 0,       ALIGN(4)
 #else

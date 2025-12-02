@@ -65,6 +65,8 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
 
     if (APP_LOG_QueueHandle != NULL)
     {
+        //todo
+        //APP_LOG_outputLine(logMessage.level, logMessage.tag, logMessage.message);
         ret = xQueueSend(APP_LOG_QueueHandle,
                          &logMessage,
                          pdMS_TO_TICKS(APP_LOG_QUEUE_TIMEOUT_MS));

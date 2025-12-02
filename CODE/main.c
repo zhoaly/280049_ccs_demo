@@ -12,6 +12,7 @@
 #include "drv_eqep.h"
 #include "drv_spi.h"
 #include "drv_sci.h"
+#include "app_log.h"
 
 DRV_EPWM_State epwmstate0 = {};
 DRV_EQEP_State eqepstate0 = {};
@@ -92,23 +93,24 @@ void main(void)
 }
 
 
-
+char text[10] = "abcde \n";
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
 
     while (1) {
         
-        //  if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)//1ms
-        // {
-        //     // 收到通知后执行相应处理
-        //     GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
-        // }
+
         
         vTaskDelay(pdTICKS_TO_MS(1000));
+        // APP_LOGI("main", "hellow %d \n",10);
+        APP_LOGI("main", "hellow\n");
+        // DRV_SCI_writeChar('a');
+        // DRV_SCI0_TxWriteBytes(text,10);
+   
+        // APP_LOGI("1", " idle stack : %d\n",10);
 
-        //GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
-        // DRV_EQEP_update(0.01f); // 默认仅刷新角度信息，速度可在传入采样周期后获取
-        // DRV_EQEP_getState(&eqepstate0);
+        GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
+
     }
 }
 
@@ -120,10 +122,11 @@ __interrupt void timer0_ISR( void )//100ms触发
 {
 
     GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
+    
     //DRV_EPWM_getState(&epwmstate0);
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
-
+   
 }
 
 //
@@ -152,8 +155,8 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     /* 当 configCHECK_FOR_STACK_OVERFLOW 定义为 1 或 2 时执行运行时堆栈溢出检查。
     如果检测到堆栈溢出，将调用此钩子函数。 */
 
-    GPIO_writePin(myLED1_GPIO,1);
-    GPIO_writePin(myLED2_GPIO,1);//栈溢出标志 两灯常亮
+    GPIO_writePin(myLED1_GPIO,0);
+    GPIO_writePin(myLED2_GPIO,0);//栈溢出标志 两灯常亮
     
     taskDISABLE_INTERRUPTS();
     for( ;; );
