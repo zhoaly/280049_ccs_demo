@@ -55,7 +55,7 @@ typedef enum
  * @brief 每条日志允许的最大参数个数。
  */
 #ifndef APP_LOG_MAX_ARGS
-#define APP_LOG_MAX_ARGS   (4U)
+#define APP_LOG_MAX_ARGS   (2U)
 #endif
 
 /**
@@ -153,38 +153,8 @@ void LOG_Task_Func(void *pvParameters);
             _args[0].type  = APP_LOG_ARG_INT;                           \
             _args[0].v.i32 = (int32_t)(a1);                             \
             _args[1].type  = APP_LOG_ARG_INT;                           \
-            _args[1].v.i32 = (int32_t)(a1);                             \
+            _args[1].v.i32 = (int32_t)(a2);                             \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 2U, _args);            \
-        }                                                               \
-    } while (0)
-
-#define APP_LOGX3(LEVEL, TAG, fmt, a1, a2, a3)                          \
-    do {                                                                \
-        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[3];                                        \
-            _args[0].type  = APP_LOG_ARG_INT;                           \
-            _args[0].v.i32 = (int32_t)(a1);                             \
-            _args[1].type  = APP_LOG_ARG_INT;                           \
-            _args[1].v.i32 = (int32_t)(a1);                             \
-            _args[2].type  = APP_LOG_ARG_INT;                           \
-            _args[2].v.i32 = (int32_t)(a1);                             \
-            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 3U, _args);            \
-        }                                                               \
-    } while (0)
-
-#define APP_LOGX4(LEVEL, TAG, fmt, a1, a2, a3, a4)                      \
-    do {                                                                \
-        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[4] ;                                       \
-            _args[0].type  = APP_LOG_ARG_INT;                           \
-            _args[0].v.i32 = (int32_t)(a1);                             \
-            _args[1].type  = APP_LOG_ARG_INT;                           \
-            _args[1].v.i32 = (int32_t)(a1);                             \
-            _args[2].type  = APP_LOG_ARG_INT;                           \
-            _args[2].v.i32 = (int32_t)(a1);                             \
-            _args[3].type  = APP_LOG_ARG_INT;                           \
-            _args[3].v.i32 = (int32_t)(a1);                             \
-            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 4U, _args);            \
         }                                                               \
     } while (0)
 
@@ -192,32 +162,22 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGE0(TAG, fmt)                 APP_LOGX0(APP_LOG_ERROR,   TAG, fmt)
 #define APP_LOGE1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_ERROR,   TAG, fmt, a1)
 #define APP_LOGE2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_ERROR,   TAG, fmt, a1, a2)
-#define APP_LOGE3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_ERROR,   TAG, fmt, a1, a2, a3)
-#define APP_LOGE4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_ERROR,   TAG, fmt, a1, a2, a3, a4)
 
 #define APP_LOGW0(TAG, fmt)                 APP_LOGX0(APP_LOG_WARN,    TAG, fmt)
 #define APP_LOGW1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_WARN,    TAG, fmt, a1)
 #define APP_LOGW2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_WARN,    TAG, fmt, a1, a2)
-#define APP_LOGW3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_WARN,    TAG, fmt, a1, a2, a3)
-#define APP_LOGW4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_WARN,    TAG, fmt, a1, a2, a3, a4)
 
 #define APP_LOGI0(TAG, fmt)                 APP_LOGX0(APP_LOG_INFO,    TAG, fmt)
 #define APP_LOGI1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_INFO,    TAG, fmt, a1)
 #define APP_LOGI2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_INFO,    TAG, fmt, a1, a2)
-#define APP_LOGI3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_INFO,    TAG, fmt, a1, a2, a3)
-#define APP_LOGI4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_INFO,    TAG, fmt, a1, a2, a3, a4)
 
 #define APP_LOGD0(TAG, fmt)                 APP_LOGX0(APP_LOG_DEBUG,   TAG, fmt)
 #define APP_LOGD1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_DEBUG,   TAG, fmt, a1)
 #define APP_LOGD2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_DEBUG,   TAG, fmt, a1, a2)
-#define APP_LOGD3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_DEBUG,   TAG, fmt, a1, a2, a3)
-#define APP_LOGD4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_DEBUG,   TAG, fmt, a1, a2, a3, a4)
 
 #define APP_LOGV0(TAG, fmt)                 APP_LOGX0(APP_LOG_VERBOSE, TAG, fmt)
 #define APP_LOGV1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_VERBOSE, TAG, fmt, a1)
 #define APP_LOGV2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_VERBOSE, TAG, fmt, a1, a2)
-#define APP_LOGV3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3)
-#define APP_LOGV4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3, a4)
 
 #ifdef __cplusplus
 }

@@ -115,8 +115,8 @@ FREERTOS1.semaphores.create(1);
 FREERTOS1.semaphores[0].$name         = "TimeBase_Semaphore";
 FREERTOS1.queues.create(1);
 FREERTOS1.queues[0].$name             = "APP_LOG_Queue";
-FREERTOS1.queues[0].queueItemSize     = "24";
-FREERTOS1.queues[0].queueLength       = 5;
+FREERTOS1.queues[0].queueItemSize     = "16";
+FREERTOS1.queues[0].queueLength       = 50;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

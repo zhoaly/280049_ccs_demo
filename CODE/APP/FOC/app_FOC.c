@@ -10,6 +10,7 @@
 #include "app_FOC.h"
 #include "app_FOC_OpenLoop.h"
 #include "app_FOC_CloseLoop.h"
+#include "app_log.h"
 #include "drv_epwm.h"
 #include "drv_eqep.h"
 
@@ -23,6 +24,7 @@
 #include "driverlib/sysctl.h"
 #include "driverlib/pin_map.h"
 
+static const char * TAG ="FOC";
 
 
 extern DRV_EQEP_State eqepstate0;
@@ -107,17 +109,18 @@ void FOC_Task_Func(void * pvParameters){
     while(1){
         if(xSemaphoreTake(TimeBase_SemaphoreHandle, portMAX_DELAY) == pdTRUE)
         {
-            //GPIO_togglePin(myLED2_GPIO);
+            GPIO_togglePin(myLED2_GPIO);
 
-            //(void)FOC_CloseLoop_Run(handle_CloseLoop_State, handle_FOC, 0.001f);
+            (void)FOC_CloseLoop_Run(handle_CloseLoop_State, handle_FOC, 0.001f);
 
-            // const DRV_EQEP_State *latestState =
-            //     FOC_CloseLoop_GetLatestMeasurement(handle_CloseLoop_State);
-            // if(latestState != NULL)
-            // {
-            //     eqepstate0 = *latestState;
-            // }
-            //GPIO_togglePin(myLED2_GPIO);
+            const DRV_EQEP_State *latestState =
+                FOC_CloseLoop_GetLatestMeasurement(handle_CloseLoop_State);
+            if(latestState != NULL)
+            {
+                eqepstate0 = *latestState;
+            }
+            GPIO_togglePin(myLED2_GPIO);
+            
         }
 
         //vTaskDelay(pdMS_TO_TICKS(1));//1ms

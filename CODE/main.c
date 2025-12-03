@@ -14,6 +14,10 @@
 #include "drv_sci.h"
 #include "app_log.h"
 
+
+static const char * TAG ="main";
+
+
 DRV_EPWM_State epwmstate0 = {};
 DRV_EQEP_State eqepstate0 = {};
 
@@ -73,7 +77,6 @@ void main(void)
 
     EDIS;
 
-
     // 配置 FreeRTOS
     FreeRTOS_init();
 
@@ -93,7 +96,6 @@ void main(void)
 }
 
 
-char text[10] = "abcde \n";
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
 
@@ -107,12 +109,10 @@ void myTask0_func(void * pvParameters){
         UBaseType_t watermarkWords2 = uxTaskGetStackHighWaterMark(FOC_TaskHandle);//单位word
         UBaseType_t watermarkWords3 = uxTaskGetStackHighWaterMark(LOG_TaskHandle);//单位word
         
-        APP_LOGI1("main", "task0 : %d \n",watermarkWords1);
-        APP_LOGI1("main", "LOG : %d \n",watermarkWords3);
-         //APP_LOGI1("main", "LOG : %d \n",test);
-        // APP_LOGI0("main", "task0  \n");
-        //  APP_LOGI("main", "hellow");
-        //DRV_SCI0_TxWriteBytes(text,10);
+        //APP_LOGI1(TAG, "sizeof:%d\n",g_logMsgSize);
+        APP_LOGI2(TAG, "task0:%d,%d\n",watermarkWords1,watermarkWords2);
+        //APP_LOGI1(TAG, "FOC:%d\n",watermarkWords2);
+        //APP_LOGI1(TAG, "LOG:%d\n",watermarkWords3);
 
         GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
 
@@ -127,8 +127,9 @@ __interrupt void timer0_ISR( void )//100ms触发
 {
 
     GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
-    
+    // xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
     //DRV_EPWM_getState(&epwmstate0);
+    APP_LOGI1(TAG, "speed:%d\n", eqepstate0.mechanicalSpeedRps);
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
 }
 
