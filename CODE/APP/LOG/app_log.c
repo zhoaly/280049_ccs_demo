@@ -21,7 +21,6 @@ static void APP_LOG_flushString(const char *str, size_t len);
 static size_t APP_LOG_FormatFromArgs(char *buf, size_t bufSize, const APP_LogMessage *msg);
 static void APP_LOG_outputFormatted(const APP_LogMessage *msg);
 static BaseType_t APP_LOG_Enqueue(const APP_LogMessage *msg);
-static uint8_t APP_LOG_ParseArgsFromVarlist(const char *fmt, va_list ap, APP_LogArg *args, uint8_t maxArgs);
 
 void APP_LOG_SetLevel(app_log_level_t level)
 {
@@ -100,26 +99,7 @@ BaseType_t APP_LOG_WriteArgs(app_log_level_t level,
     return pdPASS;
 }
 
-/*
- * @brief 兼容旧接口的变参写入：解析常用占位符，将参数打包后再入队
- */
-BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt, ...)
-{
-    APP_LogArg args[APP_LOG_MAX_ARGS];
-    uint8_t   argCount;
-    va_list   ap;
 
-    if (fmt == NULL)
-    {
-        fmt = "";
-    }
-
-    va_start(ap, fmt);
-    argCount = APP_LOG_ParseArgsFromVarlist(fmt, ap, args, APP_LOG_MAX_ARGS);
-    va_end(ap);
-
-    return APP_LOG_WriteArgs(level, tag, fmt, argCount, args);
-}
 
 void LOG_Task_Func(void *pvParameters)
 {
@@ -309,101 +289,6 @@ static inline void APP_LOG_PutFloat(char **pp,
     }
 }
 
-/*
- * @brief 将变参列表解析为 APP_LogArg 数组，仅支持常见占位符
- */
-static uint8_t APP_LOG_ParseArgsFromVarlist(const char *fmt,
-                                            va_list ap,
-                                            APP_LogArg *args,
-                                            uint8_t maxArgs)
-{
-    const char *p = fmt;
-    uint8_t     count = 0U;
-
-    while ((*p != '\0') && (count < maxArgs))
-    {
-        if (*p != '%')
-        {
-            p++;
-            continue;
-        }
-
-        p++; /* skip '%' */
-
-        if (*p == '%')
-        {
-            p++;
-            continue;
-        }
-
-        while ((*p == '0') || (*p == '-') || (*p == '+') || (*p == ' '))
-        {
-            p++;
-        }
-
-        while (isdigit((unsigned char)*p) != 0)
-        {
-            p++;
-        }
-
-        if (*p == '.')
-        {
-            p++;
-            while (isdigit((unsigned char)*p) != 0)
-            {
-                p++;
-            }
-        }
-
-        char spec = *p;
-        switch (spec)
-        {
-            case 'd':
-            case 'i':
-                args[count].type  = APP_LOG_ARG_INT;
-                args[count].v.i32  = (int32_t)va_arg(ap, int);
-                count++;
-                break;
-
-            case 'u':
-                args[count].type  = APP_LOG_ARG_UINT;
-                args[count].v.u32  = (uint32_t)va_arg(ap, unsigned int);
-                count++;
-                break;
-
-            case 'x':
-            case 'X':
-                args[count].type  = APP_LOG_ARG_HEX;
-                args[count].v.hex  = (uint32_t)va_arg(ap, unsigned int);
-                count++;
-                break;
-
-            case 'f':
-                args[count].type  = APP_LOG_ARG_FLOAT;
-                args[count].v.f32  = (float)va_arg(ap, double);
-                count++;
-                break;
-
-            case 's':
-                args[count].type  = APP_LOG_ARG_STR;
-                args[count].v.str  = va_arg(ap, const char *);
-                count++;
-                break;
-
-            default:
-                break;
-        }
-
-        if (*p == '\0')
-        {
-            break;
-        }
-
-        p++;
-    }
-
-    return count;
-}
 
 /*
  * @brief 在日志任务中将“格式串+参数”拼装成完整文本
@@ -595,41 +480,6 @@ static void APP_LOG_flushString(const char *str, size_t len)
         offset += sliceLen;
     }
 }
-
-
-static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const char *payload)
-{
-    char buffer[APP_LOG_MESSAGE_MAX_LEN + 24U];
-    int written;
-    size_t len;
-
-    if (tag == NULL)
-    {
-        tag = "APP";
-    }
-    // 统一报告格式:"[<level_str>][<tag>] <payload>\r\n"
-    written = snprintf(buffer,
-                       sizeof(buffer),
-                       "[%s][%s] %s\r\n",
-                       APP_LOG_levelStr(level),
-                       tag,
-                       payload);
-
-    if (written < 0)
-    {
-        return;
-    }
-
-    len = (size_t)written;
-    if (len >= sizeof(buffer))
-    {
-        len = sizeof(buffer) - 1U;
-        buffer[len] = '\0';
-    }
-
-    APP_LOG_flushString(buffer, len);
-}
-
 
 
 

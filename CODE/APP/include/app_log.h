@@ -123,23 +123,11 @@ BaseType_t APP_LOG_WriteArgs(app_log_level_t level,
                              const APP_LogArg *args);
 
 /**
- * @brief 兼容的 varargs 写入接口：仅解析常用占位符并打包参数。
- */
-BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt, ...);
-
-/**
  * @brief 日志任务入口函数，使用 SysCfg 配置的任务创建。
  */
 void LOG_Task_Func(void *pvParameters);
 
-/* 帮助宏：打包常用类型的日志参数（在调用点构造小型局部数组即可） */
-#define APP_LOG_ARG_I(v)   { .type = APP_LOG_ARG_INT,   .v.i32 = (int32_t)(v) }
-#define APP_LOG_ARG_U(v)   { .type = APP_LOG_ARG_UINT,  .v.u32 = (uint32_t)(v) }
-#define APP_LOG_ARG_X(v)   { .type = APP_LOG_ARG_HEX,   .v.hex = (uint32_t)(v) }
-#define APP_LOG_ARG_F(v)   { .type = APP_LOG_ARG_FLOAT, .v.f32 = (float)(v) }
-#define APP_LOG_ARG_S(v)   { .type = APP_LOG_ARG_STR,   .v.str = (v) }
-
-/* 针对 0~4 个参数的便捷宏，保证调用侧栈占用固定且极小。 */
+//暂时实现以下四个宏,后续使用时可以自行排列组合
 #define APP_LOGX0(LEVEL, TAG, fmt)                                      \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
@@ -161,7 +149,11 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX2(LEVEL, TAG, fmt, a1, a2)                              \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[2] = {  APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),};                       \
+            APP_LogArg _args[2] ;                                       \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 2U, _args);            \
         }                                                               \
     } while (0)
@@ -169,7 +161,13 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX3(LEVEL, TAG, fmt, a1, a2, a3)                          \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[3] = {  APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),  APP_LOG_ARG_I(a3) ,};                 \
+            APP_LogArg _args[3];                                        \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
+            _args[2].type  = APP_LOG_ARG_INT;                           \
+            _args[2].v.i32 = (int32_t)(a1);                             \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 3U, _args);            \
         }                                                               \
     } while (0)
@@ -177,7 +175,15 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGX4(LEVEL, TAG, fmt, a1, a2, a3, a4)                      \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
-            APP_LogArg _args[4] = { APP_LOG_ARG_I(a1),  APP_LOG_ARG_I(a2),  APP_LOG_ARG_I(a3), APP_LOG_ARG_I(a4) ,};           \
+            APP_LogArg _args[4] ;                                       \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
+            _args[2].type  = APP_LOG_ARG_INT;                           \
+            _args[2].v.i32 = (int32_t)(a1);                             \
+            _args[3].type  = APP_LOG_ARG_INT;                           \
+            _args[3].v.i32 = (int32_t)(a1);                             \
             APP_LOG_WriteArgs((LEVEL), TAG, fmt, 4U, _args);            \
         }                                                               \
     } while (0)
@@ -212,42 +218,6 @@ void LOG_Task_Func(void *pvParameters);
 #define APP_LOGV2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_VERBOSE, TAG, fmt, a1, a2)
 #define APP_LOGV3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3)
 #define APP_LOGV4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3, a4)
-
-/* 兼容保留：旧版变参接口仍可使用，但不再在调用侧格式化。 */
-#define APP_LOGE(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_ERROR) { \
-            APP_LOG_Write(APP_LOG_ERROR, TAG, fmt, ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-#define APP_LOGW(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_WARN) { \
-            APP_LOG_Write(APP_LOG_WARN, TAG, fmt, ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-#define APP_LOGI(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_INFO) { \
-            APP_LOG_Write(APP_LOG_INFO, TAG, fmt, ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-#define APP_LOGD(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_DEBUG) { \
-            APP_LOG_Write(APP_LOG_DEBUG, TAG, fmt, ##__VA_ARGS__); \
-        } \
-    } while (0)
-
-#define APP_LOGV(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_VERBOSE) { \
-            APP_LOG_Write(APP_LOG_VERBOSE, TAG, fmt, ##__VA_ARGS__); \
-        } \
-    } while (0)
 
 #ifdef __cplusplus
 }
