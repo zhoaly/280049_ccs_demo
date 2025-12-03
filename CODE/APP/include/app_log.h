@@ -52,6 +52,53 @@ typedef enum
 #endif
 
 /**
+ * @brief 每条日志允许的最大参数个数。
+ */
+#ifndef APP_LOG_MAX_ARGS
+#define APP_LOG_MAX_ARGS   (4U)
+#endif
+
+/**
+ * @brief 日志参数类型。
+ */
+typedef enum
+{
+    APP_LOG_ARG_INT = 0,
+    APP_LOG_ARG_UINT,
+    APP_LOG_ARG_HEX,
+    APP_LOG_ARG_FLOAT,
+    APP_LOG_ARG_STR,
+} APP_LogArgType;
+
+/**
+ * @brief 日志参数打包结构。
+ */
+typedef struct
+{
+    APP_LogArgType type;
+    union
+    {
+        int32_t      i32;
+        uint32_t     u32;
+        uint32_t     hex;
+        float        f32;
+        const char  *str;
+    } v;
+} APP_LogArg;
+
+/**
+ * @brief 队列传递的日志消息体：保存原始格式串与参数列表。
+ */
+typedef struct
+{
+    app_log_level_t level;
+    const char     *tag;
+    const char     *fmt;
+    uint8_t         argCount;
+    APP_LogArg      args[APP_LOG_MAX_ARGS];
+} APP_LogMessage;
+
+/**
  * @brief 使用 SysCfg 生成的日志队列句柄（在其他文件中定义）。
  */
 extern QueueHandle_t APP_LOG_QueueHandle;
@@ -67,50 +114,110 @@ void APP_LOG_SetLevel(app_log_level_t level);
 app_log_level_t APP_LOG_GetLevel(void);
 
 /**
- * @brief 日志写入接口（异步，将消息投递到日志队列）。
+ * @brief 已打包参数的日志写入接口（异步，将消息投递到日志队列）。
  */
-BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt, ...);
+BaseType_t APP_LOG_WriteArgs(app_log_level_t level,
+                             const char *tag,
+                             const char *fmt,
+                             uint8_t argCount,
+                             const APP_LogArg *args);
 
 /**
  * @brief 日志任务入口函数，使用 SysCfg 配置的任务创建。
  */
 void LOG_Task_Func(void *pvParameters);
 
-/* 一组便捷宏，模仿 ESP_LOGX(TAG, ...) 用法 */
-#define APP_LOGE(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_ERROR) { \
-            APP_LOG_Write(APP_LOG_ERROR, TAG, fmt, ##__VA_ARGS__); \
-        } \
+//暂时实现以下四个宏,后续使用时可以自行排列组合
+#define APP_LOGX0(LEVEL, TAG, fmt)                                      \
+    do {                                                                \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 0U, NULL);             \
+        }                                                               \
     } while (0)
 
-#define APP_LOGW(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_WARN) { \
-            APP_LOG_Write(APP_LOG_WARN, TAG, fmt, ##__VA_ARGS__); \
-        } \
+#define APP_LOGX1(LEVEL, TAG, fmt, a1)                                  \
+    do {                                                                \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
+            APP_LogArg _args[1];                                        \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 1U, _args);            \
+        }                                                               \
     } while (0)
 
-#define APP_LOGI(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_INFO) { \
-            APP_LOG_Write(APP_LOG_INFO, TAG, fmt, ##__VA_ARGS__); \
-        } \
+
+#define APP_LOGX2(LEVEL, TAG, fmt, a1, a2)                              \
+    do {                                                                \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
+            APP_LogArg _args[2] ;                                       \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 2U, _args);            \
+        }                                                               \
     } while (0)
 
-#define APP_LOGD(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_DEBUG) { \
-            APP_LOG_Write(APP_LOG_DEBUG, TAG, fmt, ##__VA_ARGS__); \
-        } \
+#define APP_LOGX3(LEVEL, TAG, fmt, a1, a2, a3)                          \
+    do {                                                                \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
+            APP_LogArg _args[3];                                        \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
+            _args[2].type  = APP_LOG_ARG_INT;                           \
+            _args[2].v.i32 = (int32_t)(a1);                             \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 3U, _args);            \
+        }                                                               \
     } while (0)
 
-#define APP_LOGV(TAG, fmt, ...)  \
-    do { \
-        if (APP_LOG_GLOBAL_LEVEL >= APP_LOG_VERBOSE) { \
-            APP_LOG_Write(APP_LOG_VERBOSE, TAG, fmt, ##__VA_ARGS__); \
-        } \
+#define APP_LOGX4(LEVEL, TAG, fmt, a1, a2, a3, a4)                      \
+    do {                                                                \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
+            APP_LogArg _args[4] ;                                       \
+            _args[0].type  = APP_LOG_ARG_INT;                           \
+            _args[0].v.i32 = (int32_t)(a1);                             \
+            _args[1].type  = APP_LOG_ARG_INT;                           \
+            _args[1].v.i32 = (int32_t)(a1);                             \
+            _args[2].type  = APP_LOG_ARG_INT;                           \
+            _args[2].v.i32 = (int32_t)(a1);                             \
+            _args[3].type  = APP_LOG_ARG_INT;                           \
+            _args[3].v.i32 = (int32_t)(a1);                             \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 4U, _args);            \
+        }                                                               \
     } while (0)
+
+/* 按级别派生的便捷宏 */
+#define APP_LOGE0(TAG, fmt)                 APP_LOGX0(APP_LOG_ERROR,   TAG, fmt)
+#define APP_LOGE1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_ERROR,   TAG, fmt, a1)
+#define APP_LOGE2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_ERROR,   TAG, fmt, a1, a2)
+#define APP_LOGE3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_ERROR,   TAG, fmt, a1, a2, a3)
+#define APP_LOGE4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_ERROR,   TAG, fmt, a1, a2, a3, a4)
+
+#define APP_LOGW0(TAG, fmt)                 APP_LOGX0(APP_LOG_WARN,    TAG, fmt)
+#define APP_LOGW1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_WARN,    TAG, fmt, a1)
+#define APP_LOGW2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_WARN,    TAG, fmt, a1, a2)
+#define APP_LOGW3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_WARN,    TAG, fmt, a1, a2, a3)
+#define APP_LOGW4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_WARN,    TAG, fmt, a1, a2, a3, a4)
+
+#define APP_LOGI0(TAG, fmt)                 APP_LOGX0(APP_LOG_INFO,    TAG, fmt)
+#define APP_LOGI1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_INFO,    TAG, fmt, a1)
+#define APP_LOGI2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_INFO,    TAG, fmt, a1, a2)
+#define APP_LOGI3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_INFO,    TAG, fmt, a1, a2, a3)
+#define APP_LOGI4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_INFO,    TAG, fmt, a1, a2, a3, a4)
+
+#define APP_LOGD0(TAG, fmt)                 APP_LOGX0(APP_LOG_DEBUG,   TAG, fmt)
+#define APP_LOGD1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_DEBUG,   TAG, fmt, a1)
+#define APP_LOGD2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_DEBUG,   TAG, fmt, a1, a2)
+#define APP_LOGD3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_DEBUG,   TAG, fmt, a1, a2, a3)
+#define APP_LOGD4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_DEBUG,   TAG, fmt, a1, a2, a3, a4)
+
+#define APP_LOGV0(TAG, fmt)                 APP_LOGX0(APP_LOG_VERBOSE, TAG, fmt)
+#define APP_LOGV1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_VERBOSE, TAG, fmt, a1)
+#define APP_LOGV2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_VERBOSE, TAG, fmt, a1, a2)
+#define APP_LOGV3(TAG, fmt, a1, a2, a3)     APP_LOGX3(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3)
+#define APP_LOGV4(TAG, fmt, a1, a2, a3, a4) APP_LOGX4(APP_LOG_VERBOSE, TAG, fmt, a1, a2, a3, a4)
 
 #ifdef __cplusplus
 }

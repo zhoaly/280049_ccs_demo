@@ -5,8 +5,7 @@
 
 #include "app_log.h"
 #include "drv_sci.h"
-#include "app_log_vsnprintf.h"  
-
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -14,20 +13,14 @@
 /* 运行时日志级别，初始为编译期默认值 */
 static volatile app_log_level_t s_appLogRuntimeLevel = APP_LOG_GLOBAL_LEVEL;
 
-/* 日志消息结构体：队列中传递格式化后的正文与元数据。 */
-typedef struct
-{
-    app_log_level_t level;
-    const char     *tag;
-    char            message[APP_LOG_MESSAGE_MAX_LEN];
-} APP_LogMessage;
-
 /* 一次写入 TX 缓冲区的最大切片长度。 */
 #define APP_LOG_TX_SLICE_LEN   (64U)
 
 static const char *APP_LOG_levelStr(app_log_level_t level);
 static void APP_LOG_flushString(const char *str, size_t len);
-static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const char *payload);
+static size_t APP_LOG_FormatFromArgs(char *buf, size_t bufSize, const APP_LogMessage *msg);
+static void APP_LOG_outputFormatted(const APP_LogMessage *msg);
+static BaseType_t APP_LOG_Enqueue(const APP_LogMessage *msg);
 
 void APP_LOG_SetLevel(app_log_level_t level)
 {
@@ -39,11 +32,38 @@ app_log_level_t APP_LOG_GetLevel(void)
     return s_appLogRuntimeLevel;
 }
 
-BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt, ...)
+/*
+ * @brief 内部封装：将已经打包好的日志消息入队
+ */
+static BaseType_t APP_LOG_Enqueue(const APP_LogMessage *msg)
+{
+    BaseType_t ret = pdFAIL;
+
+    if ((msg == NULL) || (APP_LOG_QueueHandle == NULL))
+    {
+        return pdFAIL;
+    }
+
+    ret = xQueueSend(APP_LOG_QueueHandle,
+                     msg,
+                     pdMS_TO_TICKS(APP_LOG_QUEUE_TIMEOUT_MS));
+
+    return ret;
+}
+
+/*
+ * @brief 对外暴露的“已打包参数”写入接口
+ *
+ * 调用侧仅负责准备格式串和 APP_LogArg 数组，避免在高实时性任务里创建大 buffer。
+ */
+BaseType_t APP_LOG_WriteArgs(app_log_level_t level,
+                             const char *tag,
+                             const char *fmt,
+                             uint8_t argCount,
+                             const APP_LogArg *args)
 {
     APP_LogMessage logMessage;
-    BaseType_t ret;
-    va_list args;
+    uint8_t i;
 
     if (level > s_appLogRuntimeLevel)
     {
@@ -57,30 +77,29 @@ BaseType_t APP_LOG_Write(app_log_level_t level, const char *tag, const char *fmt
 
     logMessage.level = level;
     logMessage.tag   = tag;
+    logMessage.fmt      = fmt;
+    logMessage.argCount = (argCount > APP_LOG_MAX_ARGS) ? APP_LOG_MAX_ARGS : argCount;
 
-    va_start(args, fmt);
-    //vsnprintf 会根据 fmt 和 args，把格式化后的字符串写入 logMessage.message
-    (void)vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);//
-    // (void)APP_LOG_vsnprintf(logMessage.message, sizeof(logMessage.message), fmt, args);//
-    va_end(args);
-    logMessage.message[APP_LOG_MESSAGE_MAX_LEN - 1U] = '\0';
-
-    if (APP_LOG_QueueHandle != NULL)
+    if ((logMessage.argCount > 0U) && (args != NULL))
     {
-        // ret = pdPASS;
-        ret = xQueueSend(APP_LOG_QueueHandle,
-                         &logMessage,
-                         pdMS_TO_TICKS(APP_LOG_QUEUE_TIMEOUT_MS));
-        if (ret == pdPASS)
+        for (i = 0U; i < logMessage.argCount; i++)
         {
-            return ret;//队列可用时,直接在这里返回
+            logMessage.args[i] = args[i];
         }
     }
 
-    /* 队列不可用或发送失败时，直接同步输出，避免丢日志。 */
-    APP_LOG_outputLine(logMessage.level, logMessage.tag, logMessage.message);
+    /* 队列可用时异步发送，失败则回落为同步输出 */
+    if (APP_LOG_Enqueue(&logMessage) == pdPASS)
+    {
+        return pdPASS;
+    }
+
+    /* 队列不可用或发送失败时，直接在当前任务中同步格式化并输出。 */
+    //APP_LOG_outputFormatted(&logMessage);
     return pdPASS;
 }
+
+
 
 void LOG_Task_Func(void *pvParameters)
 {
@@ -100,12 +119,314 @@ void LOG_Task_Func(void *pvParameters)
         /* 阻塞等待一条日志消息，不需要额外延时 */
         if (xQueueReceive(queue, &logMessage, portMAX_DELAY) == pdPASS)
         {
-            APP_LOG_outputLine(logMessage.level,
-                               logMessage.tag,
-                               logMessage.message);
+            APP_LOG_outputFormatted(&logMessage);
         }
         /* 若返回值不是 pdPASS，一般意味着严重错误，可视情况加上断言或错误计数 */
     }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 内部工具函数                                                               */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * @brief 在安全范围内写入单个字符，自动维护剩余空间与已写长度
+ */
+static inline void APP_LOG_PutChar(char **pp, size_t *pRemain, size_t *pWritten, char ch)
+{
+    if ((pp != NULL) && (pRemain != NULL) && (*pRemain > 1U) && (*pp != NULL))
+    {
+        **pp = ch;
+        (*pp)++;
+        (*pRemain)--;
+        **pp = '\0';
+    }
+
+    if (pWritten != NULL)
+    {
+        (*pWritten)++;
+    }
+}
+
+/*
+ * @brief 逐字符写入字符串，内部会处理空指针情况
+ */
+static inline void APP_LOG_PutStr(char **pp, size_t *pRemain, size_t *pWritten, const char *s)
+{
+    if (s == NULL)
+    {
+        s = "(null)";
+    }
+
+    while (*s != '\0')
+    {
+        APP_LOG_PutChar(pp, pRemain, pWritten, *s++);
+    }
+}
+
+/*
+ * @brief 按指定进制输出无符号整数
+ */
+static inline void APP_LOG_PutUnsigned(char **pp,
+                                       size_t *pRemain,
+                                       size_t *pWritten,
+                                       unsigned long value,
+                                       unsigned base,
+                                       int upper)
+{
+    char tmp[16];
+    int  i = 0;
+
+    if ((base < 2U) || (base > 16U))
+    {
+        return;
+    }
+
+    do
+    {
+        unsigned digit = (unsigned)(value % base);
+        value /= base;
+
+        if (digit < 10U)
+        {
+            tmp[i++] = (char)('0' + digit);
+        }
+        else
+        {
+            tmp[i++] = (char)((upper ? 'A' : 'a') + (digit - 10U));
+        }
+    } while ((value != 0U) && (i < (int)sizeof(tmp)));
+
+    while (i > 0)
+    {
+        APP_LOG_PutChar(pp, pRemain, pWritten, tmp[--i]);
+    }
+}
+
+/*
+ * @brief 输出带符号整数，内部调用无符号转换实现
+ */
+static inline void APP_LOG_PutSigned(char **pp,
+                                     size_t *pRemain,
+                                     size_t *pWritten,
+                                     long value)
+{
+    unsigned long v;
+
+    if (value < 0)
+    {
+        APP_LOG_PutChar(pp, pRemain, pWritten, '-');
+        v = (unsigned long)(-value);
+    }
+    else
+    {
+        v = (unsigned long)value;
+    }
+
+    APP_LOG_PutUnsigned(pp, pRemain, pWritten, v, 10U, 0);
+}
+
+/*
+ * @brief 简易浮点数转字符串，控制小数位精度
+ */
+static inline void APP_LOG_PutFloat(char **pp,
+                                    size_t *pRemain,
+                                    size_t *pWritten,
+                                    double val,
+                                    int precision)
+{
+    int i;
+
+    if (precision < 0)
+    {
+        precision = 3;
+    }
+    if (precision > 6)
+    {
+        precision = 6;
+    }
+
+    if ((pRemain == NULL) || (*pRemain <= 1U))
+    {
+        return;
+    }
+
+    if (val < 0.0)
+    {
+        APP_LOG_PutChar(pp, pRemain, pWritten, '-');
+        val = -val;
+    }
+
+    double rounding = 0.5;
+    for (i = 0; i < precision; i++)
+    {
+        rounding *= 0.1;
+    }
+    val += rounding;
+
+    unsigned long intPart = (unsigned long)val;
+    double        frac    = val - (double)intPart;
+
+    APP_LOG_PutUnsigned(pp, pRemain, pWritten, intPart, 10U, 0);
+
+    if (precision <= 0)
+    {
+        return;
+    }
+
+    APP_LOG_PutChar(pp, pRemain, pWritten, '.');
+
+    for (i = 0; i < precision; i++)
+    {
+        frac *= 10.0;
+        int digit = (int)frac;
+        if (digit > 9)
+        {
+            digit = 9;
+        }
+        APP_LOG_PutChar(pp, pRemain, pWritten, (char)('0' + digit));
+        frac -= (double)digit;
+    }
+}
+
+
+/*
+ * @brief 在日志任务中将“格式串+参数”拼装成完整文本
+ */
+static size_t APP_LOG_FormatFromArgs(char *buf,
+                                     size_t bufSize,
+                                     const APP_LogMessage *msg)
+{
+    char   *p       = buf;
+    size_t  remain  = bufSize;
+    size_t  written = 0U;
+    uint8_t argIdx  = 0U;
+
+    if ((buf == NULL) || (bufSize == 0U) || (msg == NULL))
+    {
+        return 0U;
+    }
+
+    *p = '\0';
+
+    const char *lvl = APP_LOG_levelStr(msg->level);
+    const char *tag = (msg->tag != NULL) ? msg->tag : "APP";
+
+    APP_LOG_PutChar(&p, &remain, &written, '[');
+    APP_LOG_PutStr(&p, &remain, &written, lvl);
+    APP_LOG_PutChar(&p, &remain, &written, ']');
+    APP_LOG_PutChar(&p, &remain, &written, '[');
+    APP_LOG_PutStr(&p, &remain, &written, tag);
+    APP_LOG_PutChar(&p, &remain, &written, ']');
+    APP_LOG_PutChar(&p, &remain, &written, ' ');
+
+    const char *fmt = (msg->fmt != NULL) ? msg->fmt : "";
+
+    while ((*fmt != '\0') && (remain > 1U))
+    {
+        if (*fmt != '%')
+        {
+            APP_LOG_PutChar(&p, &remain, &written, *fmt++);
+            continue;
+        }
+
+        fmt++; /* skip '%' */
+
+        if (*fmt == '%')
+        {
+            APP_LOG_PutChar(&p, &remain, &written, '%');
+            fmt++;
+            continue;
+        }
+
+        while ((*fmt == '0') || (*fmt == '-') || (*fmt == '+') || (*fmt == ' '))
+        {
+            fmt++;
+        }
+
+        while (isdigit((unsigned char)*fmt) != 0)
+        {
+            fmt++;
+        }
+
+        if (*fmt == '.')
+        {
+            fmt++;
+            while (isdigit((unsigned char)*fmt) != 0)
+            {
+                fmt++;
+            }
+        }
+
+        if (argIdx >= msg->argCount)
+        {
+            APP_LOG_PutStr(&p, &remain, &written, "[ARG?]");
+            break;
+        }
+
+        APP_LogArg arg = msg->args[argIdx++];
+        switch (*fmt)
+        {
+            case 'd':
+            case 'i':
+                APP_LOG_PutSigned(&p, &remain, &written, (long)arg.v.i32);
+                break;
+
+            case 'u':
+                APP_LOG_PutUnsigned(&p, &remain, &written, (unsigned long)arg.v.u32, 10U, 0);
+                break;
+
+            case 'x':
+            case 'X':
+                APP_LOG_PutUnsigned(&p, &remain, &written, (unsigned long)arg.v.hex, 16U, (*fmt == 'X') ? 1 : 0);
+                break;
+
+            case 'f':
+                APP_LOG_PutFloat(&p, &remain, &written, (double)arg.v.f32, -1);
+                break;
+
+            case 's':
+                APP_LOG_PutStr(&p, &remain, &written, arg.v.str);
+                break;
+
+            default:
+                APP_LOG_PutChar(&p, &remain, &written, '%');
+                APP_LOG_PutChar(&p, &remain, &written, *fmt);
+                break;
+        }
+
+        if (*fmt != '\0')
+        {
+            fmt++;
+        }
+    }
+
+    APP_LOG_PutChar(&p, &remain, &written, '\r');
+    APP_LOG_PutChar(&p, &remain, &written, '\n');
+
+    return (size_t)(p - buf);
+}
+
+/*
+ * @brief 将格式化后的日志字符串发送至底层 SCI
+ */
+static void APP_LOG_outputFormatted(const APP_LogMessage *msg)
+{
+    char   buffer[APP_LOG_MESSAGE_MAX_LEN + 24U];
+    size_t len;
+
+    len = APP_LOG_FormatFromArgs(buffer, sizeof(buffer), msg);
+    if (len == 0U)
+    {
+        return;
+    }
+
+    if (len >= sizeof(buffer))
+    {
+        len = sizeof(buffer) - 1U;
+    }
+
+    APP_LOG_flushString(buffer, len);
 }
 
 static const char *APP_LOG_levelStr(app_log_level_t level)
@@ -159,41 +480,6 @@ static void APP_LOG_flushString(const char *str, size_t len)
         offset += sliceLen;
     }
 }
-
-
-static void APP_LOG_outputLine(app_log_level_t level, const char *tag, const char *payload)
-{
-    char buffer[APP_LOG_MESSAGE_MAX_LEN + 24U];
-    int written;
-    size_t len;
-
-    if (tag == NULL)
-    {
-        tag = "APP";
-    }
-    // 统一报告格式:"[<level_str>][<tag>] <payload>\r\n"
-    written = snprintf(buffer,
-                       sizeof(buffer),
-                       "[%s][%s] %s\r\n",
-                       APP_LOG_levelStr(level),
-                       tag,
-                       payload);
-
-    if (written < 0)
-    {
-        return;
-    }
-
-    len = (size_t)written;
-    if (len >= sizeof(buffer))
-    {
-        len = sizeof(buffer) - 1U;
-        buffer[len] = '\0';
-    }
-
-    APP_LOG_flushString(buffer, len);
-}
-
 
 
 
