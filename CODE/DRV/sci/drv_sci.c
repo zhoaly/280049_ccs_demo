@@ -13,6 +13,8 @@
 
 #if DRV_SCI_USE_SYSCFG
 #include "board.h"
+#include "FreeRTOS.h"
+#include "task.h"
 #endif
 
 #define DRV_SCI_DEFAULT_BASE         (SCIA_BASE)
@@ -111,6 +113,29 @@ static void DRV_SCI_configureModule(void)
 }
 #endif
 
+#if DRV_SCI_USE_SYSCFG
+void SCI_RX_Task_Func(void *pvParameters)
+{
+    uint16_t data;
+    uint16_t nextHead;
+    uint16_t fifoStatus;
+    fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+    while (fifoStatus  != SCI_FIFO_RX0)
+    {
+        fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+        data = SCI_readCharBlockingFIFO(mySCI0_BASE);  // FIFO 非空时不会阻塞
+        nextHead = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
+        
+      
+        s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
+        s_sci0RxQueue.head = nextHead;
+        vTaskDelay(pdTICKS_TO_MS(10));
+    }
+    
+}
+#endif
+
+
 void DRV_SCI_init(void)
 {
     if(s_sci.state.initialized)
@@ -126,7 +151,7 @@ void DRV_SCI_init(void)
     DRV_SCI_configureGPIO();
     DRV_SCI_configureModule();
 #endif
-
+    
     s_sci.state.initialized = true;
 }
 
@@ -284,8 +309,19 @@ uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
 }
 
 
-__interrupt void INT_mySCI0_RX_ISR(void)
+__interrupt void INT_mySCI0_RX_ISR(void)//SCI连续接收字节频繁触发中断存在bug，暂不使用
 {
+
+    #if DRV_SCI_USE_SYSCFG
+    SCI_clearInterruptStatus(mySCI0_BASE,
+                            SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
+                            SCI_INT_PE   | SCI_INT_RXERR);
+    #else
+    SCI_clearInterruptStatus(s_sci.state.base,
+                             SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
+                             SCI_INT_PE   | SCI_INT_RXERR);
+    #endif
+
     uint16_t head;
     uint16_t fifoStatus;//fifo状态临时变量
     uint16_t data;//临时变量
@@ -294,33 +330,21 @@ __interrupt void INT_mySCI0_RX_ISR(void)
     {
         s_sci.state.onRx();
     }
-
 //以下是接收逻辑
 
-    // 把 FIFO 里当前所有字节都读出来，放进环形缓冲区
-    do
-    {
-        fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
-        if (fifoStatus != SCI_FIFO_RX0)      // FIFO 非空
-        {
-            data = SCI_readCharBlockingFIFO(mySCI0_BASE);
-            head = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
+    // // 把 FIFO 里当前所有字节都读出来，放进环形缓冲区
+    // do
+    // {
+    //     fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+    //     if (fifoStatus != SCI_FIFO_RX0)      // FIFO 非空
+    //     {
+    //         data = SCI_readCharBlockingFIFO(mySCI0_BASE);
+    //         head = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
 
-            s_sci0RxQueue.buffer[s_sci0RxQueue.head] = data;
-            s_sci0RxQueue.head = head;
-        }
-    } while (fifoStatus != SCI_FIFO_RX0);
-
-
-#if DRV_SCI_USE_SYSCFG
-    SCI_clearInterruptStatus(mySCI0_BASE,
-                            SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
-                            SCI_INT_PE   | SCI_INT_RXERR);
-#else
-    SCI_clearInterruptStatus(s_sci.state.base,
-                             SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
-                             SCI_INT_PE   | SCI_INT_RXERR);
-#endif
+    //         s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
+    //         s_sci0RxQueue.head = head;
+    //     }
+    // } while (fifoStatus != SCI_FIFO_RX0);
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 }

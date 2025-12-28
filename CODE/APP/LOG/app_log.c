@@ -480,6 +480,3 @@ static void APP_LOG_flushString(const char *str, size_t len)
         offset += sliceLen;
     }
 }
-
-
-
