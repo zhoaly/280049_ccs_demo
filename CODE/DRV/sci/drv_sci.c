@@ -120,16 +120,20 @@ void SCI_RX_Task_Func(void *pvParameters)
     uint16_t nextHead;
     uint16_t fifoStatus;
     fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
-    while (fifoStatus  != SCI_FIFO_RX0)
+    while (1)
     {
         fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
-        data = SCI_readCharBlockingFIFO(mySCI0_BASE);  // FIFO 非空时不会阻塞
-        nextHead = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
-        
-      
-        s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
-        s_sci0RxQueue.head = nextHead;
-        vTaskDelay(pdTICKS_TO_MS(10));
+        if (fifoStatus  != SCI_FIFO_RX0) {
+            data = SCI_readCharBlockingFIFO(mySCI0_BASE);  // FIFO 非空时不会阻塞
+            nextHead = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
+            
+            s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
+            s_sci0RxQueue.head = nextHead;
+        }
+        else {
+            vTaskDelay(pdTICKS_TO_MS(10));
+        }
+        //vTaskDelay(pdTICKS_TO_MS(10));
     }
     
 }
