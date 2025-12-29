@@ -135,7 +135,7 @@ void LOG_Task_Func(void *pvParameters);
         }                                                               \
     } while (0)
 
-#define APP_LOGX1(LEVEL, TAG, fmt, a1)                                  \
+#define APP_LOGX1D(LEVEL, TAG, fmt, a1)                                  \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
             APP_LogArg _args[1];                                        \
@@ -145,8 +145,30 @@ void LOG_Task_Func(void *pvParameters);
         }                                                               \
     } while (0)
 
+// 1) 输出 1 个字符串参数
+#define APP_LOGX1S(LEVEL, TAG, fmt, s1)                                  \
+    do {                                                                 \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                           \
+            APP_LogArg _args[1];                                         \
+            _args[0].type  = APP_LOG_ARG_STR;                            \
+            _args[0].v.str = (const char *)(s1);                         \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 1U, _args);             \
+        }                                                                \
+    } while (0)
 
-#define APP_LOGX2(LEVEL, TAG, fmt, a1, a2)                              \
+// 2) 输出 1 个 float32 参数
+#define APP_LOGX1F(LEVEL, TAG, fmt, f1)                                  \
+    do {                                                                 \
+        if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                           \
+            APP_LogArg _args[1];                                         \
+            _args[0].type  = APP_LOG_ARG_F32;                            \
+            _args[0].v.f32 = (float)(f1);                                \
+            APP_LOG_WriteArgs((LEVEL), TAG, fmt, 1U, _args);             \
+        }                                                                \
+    } while (0)
+
+
+#define APP_LOGX2D(LEVEL, TAG, fmt, a1, a2)                              \
     do {                                                                \
         if (APP_LOG_GLOBAL_LEVEL >= (LEVEL)) {                          \
             APP_LogArg _args[2] ;                                       \
@@ -160,24 +182,26 @@ void LOG_Task_Func(void *pvParameters);
 
 /* 按级别派生的便捷宏 */
 #define APP_LOGE0(TAG, fmt)                 APP_LOGX0(APP_LOG_ERROR,   TAG, fmt)
-#define APP_LOGE1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_ERROR,   TAG, fmt, a1)
-#define APP_LOGE2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_ERROR,   TAG, fmt, a1, a2)
+#define APP_LOGE1D(TAG, fmt, a1)             APP_LOGX1D(APP_LOG_ERROR,   TAG, fmt, a1)
+#define APP_LOGE2D(TAG, fmt, a1, a2)         APP_LOGX2D(APP_LOG_ERROR,   TAG, fmt, a1, a2)
 
 #define APP_LOGW0(TAG, fmt)                 APP_LOGX0(APP_LOG_WARN,    TAG, fmt)
-#define APP_LOGW1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_WARN,    TAG, fmt, a1)
-#define APP_LOGW2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_WARN,    TAG, fmt, a1, a2)
+#define APP_LOGW1D(TAG, fmt, a1)             APP_LOGX1D(APP_LOG_WARN,    TAG, fmt, a1)
+#define APP_LOGW2D(TAG, fmt, a1, a2)         APP_LOGX2D(APP_LOG_WARN,    TAG, fmt, a1, a2)
 
 #define APP_LOGI0(TAG, fmt)                 APP_LOGX0(APP_LOG_INFO,    TAG, fmt)
-#define APP_LOGI1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_INFO,    TAG, fmt, a1)
-#define APP_LOGI2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_INFO,    TAG, fmt, a1, a2)
+#define APP_LOGI1D(TAG, fmt, a1)             APP_LOGX1D(APP_LOG_INFO,    TAG, fmt, a1)
+#define APP_LOGI2D(TAG, fmt, a1, a2)         APP_LOGX2D(APP_LOG_INFO,    TAG, fmt, a1, a2)
+#define APP_LOGI1S(TAG, fmt, s1)             APP_LOGX1S(APP_LOG_INFO,    TAG, fmt, s1)
+#define APP_LOGI1F(TAG, fmt, f1)             APP_LOGX1F(APP_LOG_INFO,    TAG, fmt, f1)
 
 #define APP_LOGD0(TAG, fmt)                 APP_LOGX0(APP_LOG_DEBUG,   TAG, fmt)
-#define APP_LOGD1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_DEBUG,   TAG, fmt, a1)
-#define APP_LOGD2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_DEBUG,   TAG, fmt, a1, a2)
+#define APP_LOGD1D(TAG, fmt, a1)             APP_LOGX1D(APP_LOG_DEBUG,   TAG, fmt, a1)
+#define APP_LOGD2D(TAG, fmt, a1, a2)         APP_LOGX2D(APP_LOG_DEBUG,   TAG, fmt, a1, a2)
 
 #define APP_LOGV0(TAG, fmt)                 APP_LOGX0(APP_LOG_VERBOSE, TAG, fmt)
-#define APP_LOGV1(TAG, fmt, a1)             APP_LOGX1(APP_LOG_VERBOSE, TAG, fmt, a1)
-#define APP_LOGV2(TAG, fmt, a1, a2)         APP_LOGX2(APP_LOG_VERBOSE, TAG, fmt, a1, a2)
+#define APP_LOGV1D(TAG, fmt, a1)             APP_LOGX1D(APP_LOG_VERBOSE, TAG, fmt, a1)
+#define APP_LOGV2D(TAG, fmt, a1, a2)         APP_LOGX2D(APP_LOG_VERBOSE, TAG, fmt, a1, a2)
 
 #ifdef __cplusplus
 }

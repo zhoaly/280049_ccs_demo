@@ -326,9 +326,9 @@ __interrupt void INT_mySCI0_RX_ISR(void)//SCI连续接收字节频繁触发中�
                              SCI_INT_PE   | SCI_INT_RXERR);
     #endif
 
-    uint16_t head;
-    uint16_t fifoStatus;//fifo状态临时变量
-    uint16_t data;//临时变量
+    // uint16_t head;
+    // uint16_t fifoStatus;//fifo状态临时变量
+    // uint16_t data;//临时变量
 
     if(s_sci.state.onRx != NULL)
     {

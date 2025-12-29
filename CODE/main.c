@@ -95,7 +95,7 @@ void main(void)
     }
 }
 
-
+uint16_t testdata[20];
 void myTask0_func(void * pvParameters){
     (void) pvParameters;
 
@@ -104,6 +104,11 @@ void myTask0_func(void * pvParameters){
 
         volatile size_t g_logMsgSize = sizeof(APP_LogMessage);
         vTaskDelay(pdTICKS_TO_MS(1000));
+
+        DRV_SCI0_RxReadBytes(testdata,20);
+
+        APP_LOGI1S(TAG, "%s", testdata);
+
        // APP_LOGI("main", "hellow %f \n",10.0);
         // UBaseType_t watermarkWords1 = uxTaskGetStackHighWaterMark(NULL);//单位word
         // UBaseType_t watermarkWords2 = uxTaskGetStackHighWaterMark(FOC_TaskHandle);//单位word
@@ -111,9 +116,10 @@ void myTask0_func(void * pvParameters){
         
         // APP_LOGI1("main", "task0 : %d \n",watermarkWords1);
         // APP_LOGI1("main", "LOG : %d \n",watermarkWords3);
-        APP_LOGI0("main", "task running \n");
+        APP_LOGI0(TAG, "task running \n");
         
         GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
+        
 
     }
 }
@@ -128,7 +134,7 @@ __interrupt void timer0_ISR( void )//100ms触发
     GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
     // xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
     //DRV_EPWM_getState(&epwmstate0);
-    APP_LOGI1(TAG, "speed:%d\n", eqepstate0.mechanicalSpeedRps);
+    // APP_LOGI1(TAG, "speed:%d\n", eqepstate0.mechanicalSpeedRps);
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
 }
 
