@@ -9,6 +9,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "FreeRTOS.h"
+
 
 #define DRV_SCI_USE_SYSCFG   (1)
 
