@@ -116,6 +116,7 @@ static void DRV_SCI_configureModule(void)
 #if DRV_SCI_USE_SYSCFG
 void SCI_RX_Task_Func(void *pvParameters)
 {
+    (void)pvParameters;
     uint16_t data;
     uint16_t nextHead;
     uint16_t fifoStatus;
