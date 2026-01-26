@@ -68,12 +68,10 @@ void main(void)
     Board_init();
 
     EALLOW;//外设配置必须在rtosinit前??
-    //DRV_SPI_init();
-    DRV_EPWM_init();
-    DRV_EQEP_init();
+
+
     DRV_SCI_init();
-    //ePWMConfigurationTemplate(EPWM1_BASE);
-    //GPIO_writePin(myLED1_GPIO,1);
+
 
     EDIS;
 
