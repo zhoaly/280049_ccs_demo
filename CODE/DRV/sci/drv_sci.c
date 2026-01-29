@@ -120,12 +120,12 @@ void SCI_RX_Task_Func(void *pvParameters)
     uint16_t data;
     uint16_t nextHead;
     uint16_t fifoStatus;
-    fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+    fifoStatus = SCI_getRxFIFOStatus(SCI_INTCOM_BASE);
     while (1)
     {
-        fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+        fifoStatus = SCI_getRxFIFOStatus(SCI_INTCOM_BASE);
         if (fifoStatus  != SCI_FIFO_RX0) {
-            data = SCI_readCharBlockingFIFO(mySCI0_BASE);  // FIFO 非空时不会阻塞
+            data = SCI_readCharBlockingFIFO(SCI_INTCOM_BASE);  // FIFO 非空时不会阻塞
             nextHead = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
             
             s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
@@ -149,7 +149,7 @@ void DRV_SCI_init(void)
     }
 
 #if DRV_SCI_USE_SYSCFG
-    s_sci.state.base = mySCI0_BASE;
+    s_sci.state.base = SCI_INTCOM_BASE;
 #else
     s_sci.state.base = DRV_SCI_DEFAULT_BASE;
     DRV_SCI_enableModuleClock();
@@ -307,7 +307,7 @@ uint16_t DRV_SCI0_TxWriteBytes(const uint16_t *pData, uint16_t len)
     // 保护性判断,当且仅当写入时缓冲区满时,不进入此分支
     if (i > 0U)
     {
-        SCI_enableInterrupt(mySCI0_BASE, SCI_INT_TXFF);
+        SCI_enableInterrupt(SCI_INTCOM_BASE, SCI_INT_TXFF);
     }
 
     return i;
@@ -318,7 +318,7 @@ __interrupt void INT_mySCI0_RX_ISR(void)//SCI连续接收字节频繁触发中�
 {
 
     #if DRV_SCI_USE_SYSCFG
-    SCI_clearInterruptStatus(mySCI0_BASE,
+    SCI_clearInterruptStatus(SCI_INTCOM_BASE,
                             SCI_INT_RXFF | SCI_INT_FE | SCI_INT_OE |
                             SCI_INT_PE   | SCI_INT_RXERR);
     #else
@@ -340,10 +340,10 @@ __interrupt void INT_mySCI0_RX_ISR(void)//SCI连续接收字节频繁触发中�
     // // 把 FIFO 里当前所有字节都读出来，放进环形缓冲区
     // do
     // {
-    //     fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+    //     fifoStatus = SCI_getRxFIFOStatus(SCI_INTCOM_BASE);
     //     if (fifoStatus != SCI_FIFO_RX0)      // FIFO 非空
     //     {
-    //         data = SCI_readCharBlockingFIFO(mySCI0_BASE);
+    //         data = SCI_readCharBlockingFIFO(SCI_INTCOM_BASE);
     //         head = nextIndex(s_sci0RxQueue.head, s_sci0RxQueue.length);
 
     //         s_sci0RxQueue.buffer[s_sci0RxQueue.head] = (data & 0x00FFU);
@@ -375,7 +375,7 @@ __interrupt void INT_mySCI0_TX_ISR(void)
     // 只要 FIFO 未满 且 缓冲区中还有数据，就不断填充 FIFO
     while (tail != head)
     {
-        fifoStatus = SCI_getTxFIFOStatus(mySCI0_BASE);
+        fifoStatus = SCI_getTxFIFOStatus(SCI_INTCOM_BASE);
 
         // FIFO 已满，无法再写，提前退出
         if (fifoStatus == SCI_FIFO_TX16)
@@ -388,7 +388,7 @@ __interrupt void INT_mySCI0_TX_ISR(void)
         tail = nextIndex(tail, s_sci0TxQueue.length);
 
         // 写入 TX FIFO（非阻塞）
-        SCI_writeCharNonBlocking(mySCI0_BASE, data);
+        SCI_writeCharNonBlocking(SCI_INTCOM_BASE, data);
     }
 
     // 更新全局 tail 指针
@@ -397,11 +397,11 @@ __interrupt void INT_mySCI0_TX_ISR(void)
     // 如果缓冲区已经空了，则关掉 TX FIFO 中断，防止 FIFO 空时产生持续中断
     if (tail == s_sci0TxQueue.head)
     {
-        SCI_disableInterrupt(mySCI0_BASE, SCI_INT_TXFF);
+        SCI_disableInterrupt(SCI_INTCOM_BASE, SCI_INT_TXFF);
     }
 
 #if DRV_SCI_USE_SYSCFG
-    SCI_clearInterruptStatus(mySCI0_BASE, SCI_INT_TXFF);
+    SCI_clearInterruptStatus(SCI_INTCOM_BASE, SCI_INT_TXFF);
 #else
     SCI_clearInterruptStatus(s_sci.state.base, SCI_INT_TXFF);
 #endif
