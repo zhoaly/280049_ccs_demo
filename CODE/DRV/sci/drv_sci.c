@@ -247,8 +247,9 @@ uint16_t DRV_SCI0_RxReadBytes(uint16_t *pBuf, uint16_t len)
         }
 
         /* 取出 1 个字节（低 8 位有效） */
-        pBuf[i] = s_sci0RxQueue.buffer[tail] & 0x00FFU;
-
+        // pBuf[i] = s_sci0RxQueue.buffer[tail] & 0x00FFU;
+        pBuf[i] = s_sci0RxQueue.buffer[tail] ;
+        
         /* 推进读指针 */
         s_sci0RxQueue.tail = nextIndex(tail, s_sci0RxQueue.length);
     }

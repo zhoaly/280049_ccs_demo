@@ -69,8 +69,8 @@ void main(void)
 
     EALLOW;//外设配置必须在rtosinit前??
     //DRV_SPI_init();
-    DRV_EPWM_init();
-    DRV_EQEP_init();
+    // DRV_EPWM_init();
+    // DRV_EQEP_init();
     DRV_SCI_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
     //GPIO_writePin(myLED1_GPIO,1);
@@ -102,15 +102,15 @@ void myTask0_func(void * pvParameters){//辅助功能?
     while (1) {
         
 
-        volatile size_t g_logMsgSize = sizeof(APP_LogMessage);
+        // volatile size_t g_logMsgSize = sizeof(APP_LogMessage);
         vTaskDelay(pdTICKS_TO_MS(1000));
 
-        DRV_SCI0_RxReadBytes(testdata,20);
+        // DRV_SCI0_RxReadBytes(testdata,20);
 
-        APP_LOGI1S(TAG, "%s", testdata);
+        // APP_LOGI1S(TAG, "%s", testdata);
         APP_LOGI0(TAG, "task running \n");
         
-        GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
+        GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
         
 
     }
@@ -123,7 +123,7 @@ void myTask0_func(void * pvParameters){//辅助功能?
 __interrupt void timer0_ISR( void )//100ms触发
 {
 
-    GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
+    // GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
 }
