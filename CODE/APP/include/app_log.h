@@ -11,7 +11,8 @@
 #include <stdarg.h>
 
 #include "FreeRTOS.h"
-#include "queue.h"
+#include "c2000_freertos.h"
+
 
 #ifdef __cplusplus
 extern "C" {

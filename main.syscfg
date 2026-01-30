@@ -22,7 +22,6 @@ const gpio4          = gpio.addInstance();
 const gpio5          = gpio.addInstance();
 const sci            = scripting.addModule("/driverlib/sci.js", {}, false);
 const sci1           = sci.addInstance();
-const sci2           = sci.addInstance();
 const FREERTOS       = scripting.addModule("/kernel/freertos_tool/FREERTOS", {}, false);
 const FREERTOS1      = FREERTOS.addInstance();
 
@@ -75,15 +74,11 @@ gpio5.direction       = "GPIO_DIR_MODE_OUT";
 gpio5.gpioPin.$assign = "GPIO9";
 
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
-sci1.$name                      = "SCI_EXTCOM";
-sci1.useInterrupts              = false;
-sci1.useFifo                    = false;
-sci1.rxQual.$name               = "myGPIOQUAL0";
-sci1.txQual.$name               = "myGPIOQUAL1";
-
-sci2.$name        = "SCI_INTCOM";
-sci2.rxQual.$name = "myGPIOQUAL2";
-sci2.txQual.$name = "myGPIOQUAL3";
+sci1.$name                      = "mySCI0";
+sci1.enabledFIFOInterrupts      = ["SCI_INT_TXFF"];
+sci1.rxQual.$name               = "myGPIOQUAL2";
+sci1.txQual.$name               = "myGPIOQUAL3";
+sci1.sciTXInt.enableInterrupt   = true;
 
 FREERTOS1.$name                       = "myFREERTOS0";
 FREERTOS1.MINIMAL_STACK_SIZE          = 256;
@@ -104,8 +99,10 @@ FREERTOS1.tasks[2].$name              = "SCI_RX_Task";
 FREERTOS1.tasks[2].taskPointer        = "SCI_RX_Task_Func";
 FREERTOS1.tasks[3].$name              = "PROTO_Task";
 FREERTOS1.tasks[3].taskPointer        = "PROTO_Task_Func";
-FREERTOS1.semaphores.create(1);
+FREERTOS1.tasks[3].taskStackSize      = 512;
+FREERTOS1.semaphores.create(2);
 FREERTOS1.semaphores[0].$name         = "TimeBase_Semaphore";
+FREERTOS1.semaphores[1].$name         = "SCI0Tx_Semaphore";
 FREERTOS1.queues.create(1);
 FREERTOS1.queues[0].$name             = "APP_LOG_Queue";
 FREERTOS1.queues[0].queueItemSize     = "16";
@@ -116,9 +113,6 @@ FREERTOS1.queues[0].queueLength       = 50;
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-sci1.sci.$suggestSolution           = "SCIB";
-sci1.sci.sci_rxPin.$suggestSolution = "GPIO11";
-sci1.sci.sci_txPin.$suggestSolution = "GPIO12";
-sci2.sci.$suggestSolution           = "SCIA";
-sci2.sci.sci_rxPin.$suggestSolution = "GPIO17";
-sci2.sci.sci_txPin.$suggestSolution = "GPIO16";
+sci1.sci.$suggestSolution           = "SCIA";
+sci1.sci.sci_rxPin.$suggestSolution = "GPIO17";
+sci1.sci.sci_txPin.$suggestSolution = "GPIO16";

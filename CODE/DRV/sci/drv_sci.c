@@ -120,7 +120,10 @@ void SCI_RX_Task_Func(void *pvParameters)
     uint16_t data;
     uint16_t nextHead;
     uint16_t fifoStatus;
+    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+    
     fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
+    
     while (1)
     {
         fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
@@ -156,7 +159,6 @@ void DRV_SCI_init(void)
     DRV_SCI_configureGPIO();
     DRV_SCI_configureModule();
 #endif
-    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
     
     s_sci.state.initialized = true;
 }

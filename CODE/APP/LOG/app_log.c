@@ -471,10 +471,16 @@ static void APP_LOG_flushString(const char *str, size_t len)
         }
 
        /* 直接把 char 缓冲区视为 uint16_t 缓冲区使用，避免逐字节拷贝 */
-        (void)DRV_SCI0_TxWriteBytes(
-            (const uint16_t *)(const void *)(str + offset),
-            (uint16_t)sliceLen
-        );
+       
+        if(xSemaphoreTake(SCI0Tx_SemaphoreHandle, portMAX_DELAY) == pdTRUE){
+            
+            (void)DRV_SCI0_TxWriteBytes(
+                (const uint16_t *)(const void *)(str + offset),
+                (uint16_t)sliceLen);
+            xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+        }
+    
+        
 
         /* 更新偏移量，指向下一段待发送数据的起始位置 */
         offset += sliceLen;

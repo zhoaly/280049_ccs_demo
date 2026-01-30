@@ -566,8 +566,8 @@ void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
 
 void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
 {
-
-    if(xSemaphoreTake(SCI0Tx_SemaphoreHandle, portMAX_DELAY) == pdTRUE){
+    // xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+    if(xSemaphoreTake(SCI0Tx_SemaphoreHandle,portMAX_DELAY) == pdTRUE){
         APP_PROTO_CorePoll(pCtx);
         xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
     }
