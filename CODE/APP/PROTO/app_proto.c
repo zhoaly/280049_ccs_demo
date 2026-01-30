@@ -238,15 +238,16 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
-    APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
+    // APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
     
-    APP_PROTO_RegisterIO(&s_protoCtx,
-                         APP_ProtoRead,  (void *)0,
-                         APP_ProtoWrite, (void *)0);
+    // APP_PROTO_RegisterIO(&s_protoCtx,
+    //                      APP_ProtoRead,  (void *)0,
+    //                      APP_ProtoWrite, (void *)0);
     while (1)
     {
-        APP_PROTO_Poll(&s_protoCtx);
+        // APP_PROTO_Poll(&s_protoCtx);
         vTaskDelay(pdTICKS_TO_MS(10));
+        
     }
 }
 

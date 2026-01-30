@@ -103,9 +103,9 @@ void myTask0_func(void * pvParameters){//辅助功能?
         volatile size_t g_logMsgSize = sizeof(APP_LogMessage);
         vTaskDelay(pdTICKS_TO_MS(1000));
 
-        DRV_SCI0_RxReadBytes(testdata,20);
+        // DRV_SCI0_RxReadBytes(testdata,20);
 
-        APP_LOGI1S(TAG, "%s", testdata);
+        // APP_LOGI1S(TAG, "%s", testdata);
         APP_LOGI0(TAG, "task running \n");
         
         // GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志

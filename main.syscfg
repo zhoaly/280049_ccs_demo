@@ -104,6 +104,7 @@ FREERTOS1.tasks[2].$name              = "SCI_RX_Task";
 FREERTOS1.tasks[2].taskPointer        = "SCI_RX_Task_Func";
 FREERTOS1.tasks[3].$name              = "PROTO_Task";
 FREERTOS1.tasks[3].taskPointer        = "PROTO_Task_Func";
+FREERTOS1.tasks[3].taskStackSize      = 512;
 FREERTOS1.semaphores.create(1);
 FREERTOS1.semaphores[0].$name         = "TimeBase_Semaphore";
 FREERTOS1.queues.create(1);
