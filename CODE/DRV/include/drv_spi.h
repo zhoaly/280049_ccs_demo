@@ -9,6 +9,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef DRV_SPI_USE_SYSCFG
+#define DRV_SPI_USE_SYSCFG   (1)
+#endif
+
 #ifndef DRV8316S_H
 #include "drv8316s.h"
 #endif

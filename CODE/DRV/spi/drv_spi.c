@@ -19,6 +19,7 @@ static DRV_SPI_State s_spiState =
     .initialized = false
 };
 
+#if !DRV_SPI_USE_SYSCFG
 static void DRV_SPI_enableModuleClock(void)
 {
     /**
@@ -53,6 +54,7 @@ static void DRV_SPI_configureFunctionalPins(void)
 //     GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISIMOA, GPIO_PIN_TYPE_PULLUP);
 //     GPIO_setPadConfig(DEVICE_GPIO_PIN_SPISOMIA, GPIO_PIN_TYPE_PULLUP);
 }
+#endif
 
 static void DRV_SPI_configureChipSelectPin(uint32_t gpio)
 {
@@ -106,19 +108,23 @@ void DRV_SPI_init(void)
     {
         return;
     }
-
+#if DRV_SPI_USE_SYSCFG
+#if defined(mySPI0_BASE)
+    s_spiState.base = mySPI0_BASE;
+#endif
+#if defined(mySPI0_BITRATE)
+    s_spiState.bitRate = mySPI0_BITRATE;
+#endif
+#if defined(mySPI0_DATAWIDTH)
+    s_spiState.dataWidth = mySPI0_DATAWIDTH;
+#endif
+#else
     DRV_SPI_enableModuleClock();
 
     DRV_SPI_configureFunctionalPins();
 
     SPI_disableModule(s_spiState.base);
-    /*
-     * 配置 SPI 工作模式：
-     * - 使用设备低速外设时钟作为参考；
-     * - 采用 CPOL = 0, CPHA = 1 的时序，与 DRV8316 数据手册匹配；
-     * - 控制器模式由 MCU 主动发起通信；
-     * - 波特率与位宽取自运行状态配置。
-     */
+    /* Configure SPI as controller, CPOL=0, CPHA=1, using LSPCLK. */
     SPI_setConfig(s_spiState.base,
                   DEVICE_LSPCLK_FREQ,
                   SPI_PROT_POL0PHA1,
@@ -130,17 +136,19 @@ void DRV_SPI_init(void)
     SPI_enableModule(s_spiState.base);
 
     SPI_enableFIFO(s_spiState.base);
-    /* 传输延迟设为 0，使数据在写入后立刻进入移位寄存器。 */
+    /* Transmit delay 0 so data moves to shift register immediately. */
     SPI_setTxFifoTransmitDelay(s_spiState.base, 0U);
-    /* 设定 FIFO 中断阈值，以便在需要时快速扩展中断驱动逻辑。 */
+    /* FIFO interrupt level. */
     SPI_setFIFOInterruptLevel(s_spiState.base, SPI_FIFO_TX0, SPI_FIFO_RX1);
-    /* 清空所有潜在的历史中断标志，确保初始化后状态干净。 */
+    /* Clear pending interrupt flags. */
     SPI_clearInterruptStatus(s_spiState.base,
                              SPI_INT_RX_DATA_TX_EMPTY |
                              SPI_INT_RX_OVERRUN |
                              SPI_INT_RXFF |
                              SPI_INT_RXFF_OVERFLOW |
                              SPI_INT_TXFF);
+#endif
+
 
     DRV_SPI_configureChipSelectPin(s_spiState.csGpio);
     DRV_SPI_configureEnablePin(s_spiState.enableGpio);
