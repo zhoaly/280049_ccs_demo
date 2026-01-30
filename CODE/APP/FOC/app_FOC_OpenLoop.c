@@ -7,12 +7,7 @@
  * 快速复用，也方便未来扩展闭环控制所需的额外算法模块。
  */
 
-#include "app_FOC_OpenLoop.h"
-
-#include <math.h>
-
-#include "FreeRTOS.h"
-#include "task.h"
+#include "__INCLUDE.h"
 
 /**
  * @brief 获取当前系统时间的微秒级计数。

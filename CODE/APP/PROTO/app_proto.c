@@ -1,7 +1,5 @@
 /* app_proto.c */
-#include "app_proto.h"
-#include "device.h"
-#include "board.h"
+#include "__INCLUDE.h"
 
 /* ============================================================================
  * 全局变量
@@ -13,24 +11,91 @@
  * ========================================================================== */
 static const char * TAG ="proto";
  
-static APP_PROTO_Ctx s_protoCtx;
-/* ============================================================================
- * 内部静态函数
- * ========================================================================== */
+typedef struct
+{
+    uint16_t id;
+    uint16_t enabled;
+    APP_PROTO_Device dev;
+    APP_PROTO_Ctx ctx;
+} APP_PROTO_Channel;
 
-//两个回调函数
-/* 从 RX 环形缓冲区读取：每个 uint16_t 的低 8 位为有效字节 */
-static uint16_t APP_ProtoRead(uint16_t *pBuf, uint16_t len, void *pUser)
+static APP_PROTO_Channel s_protoChannels[APP_PROTO_CHANNEL_NUM] =
+{
+    { (uint16_t)APP_PROTO_CH0, (uint16_t)APP_PROTO_CH0_ENABLE, APP_PROTO_CH0_DEV, {0} },
+    { (uint16_t)APP_PROTO_CH1, (uint16_t)APP_PROTO_CH1_ENABLE, APP_PROTO_CH1_DEV, {0} }
+};
+
+static uint16_t APP_ProtoReadSci0(uint16_t *pBuf, uint16_t len, void *pUser)
 {
     (void)pUser;
     return DRV_SCI0_RxReadBytes(pBuf, len);
 }
 
-/* 向 TX 环形缓冲区写入：每个 uint16_t 的低 8 位为有效字节 */
-static uint16_t APP_ProtoWrite(const uint16_t *pData, uint16_t len, void *pUser)
+static uint16_t APP_ProtoWriteSci0(const uint16_t *pData, uint16_t len, void *pUser)
 {
     (void)pUser;
-    return DRV_SCI0_TxWriteBytes(pData, len);//TODO:当前存在bug,会和LOG模块冲突,应实现原子化操作(似乎应在任务中自行实现)
+    return DRV_SCI0_TxWriteBytes(pData, len);
+}
+
+static uint16_t APP_ProtoReadNone(uint16_t *pBuf, uint16_t len, void *pUser)
+{
+    (void)pBuf;
+    (void)len;
+    (void)pUser;
+    return 0u;
+}
+
+static uint16_t APP_ProtoWriteNone(const uint16_t *pData, uint16_t len, void *pUser)
+{
+    (void)pData;
+    (void)len;
+    (void)pUser;
+    return 0u;
+}
+
+static uint16_t APP_ProtoLockSci0(void *pUser)
+{
+    (void)pUser;
+    if (xSemaphoreTake(SCI0Tx_SemaphoreHandle, portMAX_DELAY) == pdTRUE)
+    {
+        return 1u;
+    }
+    return 0u;
+}
+
+static void APP_ProtoUnlockSci0(void *pUser)
+{
+    (void)pUser;
+    xSemaphoreGive(SCI0Tx_SemaphoreHandle);
+}
+
+static APP_PROTO_Channel *APP_PROTO_GetChannel(uint16_t ch)
+{
+    if (ch >= (uint16_t)APP_PROTO_CHANNEL_NUM)
+    {
+        return (APP_PROTO_Channel *)0;
+    }
+    return &s_protoChannels[ch];
+}
+
+APP_PROTO_Ctx *APP_PROTO_GetChannelCtx(uint16_t ch)
+{
+    APP_PROTO_Channel *channel = APP_PROTO_GetChannel(ch);
+    if ((channel == (APP_PROTO_Channel *)0) || (channel->enabled == 0u))
+    {
+        return (APP_PROTO_Ctx *)0;
+    }
+    return &channel->ctx;
+}
+
+uint16_t APP_PROTO_IsChannelEnabled(uint16_t ch)
+{
+    APP_PROTO_Channel *channel = APP_PROTO_GetChannel(ch);
+    if (channel == (APP_PROTO_Channel *)0)
+    {
+        return 0u;
+    }
+    return channel->enabled;
 }
 
 static void PROTO_Handler(APP_PROTO_Cmd cmd,
@@ -239,21 +304,100 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
  * - 建议结合事件/信号量，在有新数据时唤醒任务以降低 CPU 占用。
  */
 
+static void APP_PROTO_ChannelBindIO(APP_PROTO_Channel *ch)
+{
+    if (ch == (APP_PROTO_Channel *)0)
+    {
+        return;
+    }
+
+    ch->ctx.lockFn    = (APP_PROTO_LockFn)0;
+    ch->ctx.unlockFn  = (APP_PROTO_UnlockFn)0;
+    ch->ctx.pLockUser = (void *)0;
+
+    switch (ch->dev)
+    {
+        case APP_PROTO_DEV_SCI0:
+        {
+            APP_PROTO_RegisterIO(&ch->ctx,
+                                 APP_ProtoReadSci0,  (void *)0,
+                                 APP_ProtoWriteSci0, (void *)0);
+            ch->ctx.lockFn   = APP_ProtoLockSci0;
+            ch->ctx.unlockFn = APP_ProtoUnlockSci0;
+        } break;
+
+        case APP_PROTO_DEV_SPI0:
+        {
+            APP_PROTO_RegisterIO(&ch->ctx,
+                                 APP_ProtoReadNone,  (void *)0,
+                                 APP_ProtoWriteNone, (void *)0);
+        } break;
+
+        case APP_PROTO_DEV_NONE:
+        default:
+        {
+            APP_PROTO_RegisterIO(&ch->ctx,
+                                 (APP_PROTO_ReadFn)0,  (void *)0,
+                                 (APP_PROTO_WriteFn)0, (void *)0);
+        } break;
+    }
+}
+
+static void APP_PROTO_ChannelInitOne(APP_PROTO_Channel *ch)
+{
+    if ((ch == (APP_PROTO_Channel *)0) || (ch->enabled == 0u))
+    {
+        return;
+    }
+
+    APP_PROTO_Init(&ch->ctx, PROTO_Handler, (void *)ch);
+    APP_PROTO_ChannelBindIO(ch);
+}
+
+static void APP_PROTO_ChannelInitAll(void)
+{
+    uint16_t i;
+
+    for (i = 0u; i < (uint16_t)APP_PROTO_CHANNEL_NUM; i++)
+    {
+        APP_PROTO_ChannelInitOne(&s_protoChannels[i]);
+    }
+}
+
+static void APP_PROTO_ChannelPollOne(APP_PROTO_Channel *ch)
+{
+    if ((ch == (APP_PROTO_Channel *)0) || (ch->enabled == 0u))
+    {
+        return;
+    }
+
+    APP_PROTO_Poll(&ch->ctx);
+}
+
+static void APP_PROTO_ChannelPollAll(void)
+{
+    uint16_t i;
+
+    for (i = 0u; i < (uint16_t)APP_PROTO_CHANNEL_NUM; i++)
+    {
+        APP_PROTO_ChannelPollOne(&s_protoChannels[i]);
+    }
+}
+
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
-    APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
-    
-    APP_PROTO_RegisterIO(&s_protoCtx,
-                         APP_ProtoRead,  (void *)0,
-                         APP_ProtoWrite, (void *)0);
+
+    APP_PROTO_ChannelInitAll();
+
     while (1)
     {
-        APP_PROTO_Poll(&s_protoCtx);
+        APP_PROTO_ChannelPollAll();
         vTaskDelay(pdTICKS_TO_MS(10));
-        
     }
 }
+
+
 
 /**
  * @brief 初始化协议解析器上下文
@@ -290,6 +434,10 @@ static void APP_PROTO_CoreInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handl
     pCtx->pReadUser  = (void *)0;
     pCtx->writeFn    = (APP_PROTO_WriteFn)0;
     pCtx->pWriteUser = (void *)0;
+    pCtx->lockFn    = (APP_PROTO_LockFn)0;
+    pCtx->unlockFn  = (APP_PROTO_UnlockFn)0;
+    pCtx->pLockUser = (void *)0;
+
 
     APP_PROTO_Reset(pCtx);
 }
@@ -485,8 +633,13 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
                           void *pUser)
 {
     // uint16_t cmdOk = 0u;
+    APP_PROTO_Channel *channel = (APP_PROTO_Channel *)pUser;
+    APP_PROTO_Ctx *ctx = (APP_PROTO_Ctx *)0;
 
-    (void)pUser;
+    if (channel != (APP_PROTO_Channel *)0)
+    {
+        ctx = &channel->ctx;
+    }
 
     switch (cmd)
     {
@@ -494,9 +647,18 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
         {
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
             {
-                APP_LOGI0(TAG, "Receive WRITE CMD \n");
+                if (channel->id == APP_PROTO_CH0) {
+                    APP_LOGI0(TAG, "Receive WRITE CMD CH0\n");
+                }
+                else if (channel->id == APP_PROTO_CH1) {
+                    APP_LOGI0(TAG, "Receive WRITE CMD CH1\n");
+                }
+               
 
-                APP_PROTO_SlaveWrite(&s_protoCtx,(const uint16_t *)pPayload,len);
+                if (ctx != (APP_PROTO_Ctx *)0)
+                {
+                    APP_PROTO_SlaveWrite(ctx, (const uint16_t *)pPayload, len);
+                }
             }
         } break;
 
@@ -515,6 +677,8 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
         } break;
     }
 }
+
+
 
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
 void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
@@ -566,13 +730,29 @@ void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
 
 void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
 {
-    // xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
-    if(xSemaphoreTake(SCI0Tx_SemaphoreHandle,portMAX_DELAY) == pdTRUE){
-        APP_PROTO_CorePoll(pCtx);
-        xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+    uint16_t locked = 1u;
+
+    if (pCtx == (APP_PROTO_Ctx *)0)
+    {
+        return;
     }
-    
+
+    if (pCtx->lockFn != (APP_PROTO_LockFn)0)
+    {
+        locked = pCtx->lockFn(pCtx->pLockUser);
+    }
+
+    if (locked != 0u)
+    {
+        APP_PROTO_CorePoll(pCtx);
+        if (pCtx->unlockFn != (APP_PROTO_UnlockFn)0)
+        {
+            pCtx->unlockFn(pCtx->pLockUser);
+        }
+    }
 }
+
+
 
 uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
                               const uint16_t *pPay,

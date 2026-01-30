@@ -1,18 +1,7 @@
 //分支说明********************************************/
-//当前为大功率驱动版本分支
-//使用BTN7971驱动方案,不使用DRV8316驱动,
+//通信协议开发测试分支
 // sys include********************************************/
-#include "driverlib.h"
-#include "device.h"
-#include "FreeRTOS.h"
-#include "board.h"
-#include "c2000_freertos.h"
-// user include********************************************/
-#include "drv_epwm.h"
-#include "drv_eqep.h"
-#include "drv_spi.h"
-#include "drv_sci.h"
-#include "app_log.h"
+#include "__INCLUDE.h"
 
 
 static const char * TAG ="main";
@@ -84,7 +73,7 @@ void main(void)
     //驱动初始化************************************************/
 
     
-    
+    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
 
     
     EINT;

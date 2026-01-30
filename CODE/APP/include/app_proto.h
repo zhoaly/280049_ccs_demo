@@ -53,6 +53,47 @@ typedef enum
 #endif
 
 /* ============================================================================
+ * Multi-channel config
+ * ========================================================================== */
+typedef enum
+{
+    APP_PROTO_DEV_NONE = 0,
+    APP_PROTO_DEV_SCI0,
+    APP_PROTO_DEV_SPI0
+} APP_PROTO_Device;
+
+typedef enum
+{
+    APP_PROTO_CH0 = 0u,
+    APP_PROTO_CH1 = 1u
+} APP_PROTO_ChannelId;
+
+#ifndef APP_PROTO_CHANNEL_NUM
+#define APP_PROTO_CHANNEL_NUM        (2u)
+#endif
+
+#if (APP_PROTO_CHANNEL_NUM != 2u)
+#error "APP_PROTO_CHANNEL_NUM currently supports only 2 channels"
+#endif
+
+#ifndef APP_PROTO_CH0_ENABLE
+#define APP_PROTO_CH0_ENABLE         (1u)
+#endif
+
+#ifndef APP_PROTO_CH1_ENABLE
+#define APP_PROTO_CH1_ENABLE         (0u)
+#endif
+
+#ifndef APP_PROTO_CH0_DEV
+#define APP_PROTO_CH0_DEV            (APP_PROTO_DEV_SCI0)
+#endif
+
+#ifndef APP_PROTO_CH1_DEV
+#define APP_PROTO_CH1_DEV            (APP_PROTO_DEV_NONE)
+#endif
+
+
+/* ============================================================================
  * 类型定义
  * ========================================================================== */
 /* 解耦：从“唤醒缓冲区/环形缓冲区”读取字节（每个uint16低8位有效），返回实际读取个数 */
@@ -60,6 +101,11 @@ typedef uint16_t (*APP_PROTO_ReadFn)(uint16_t *pBuf, uint16_t len, void *pUser);
 
 /* 解耦：向“发送环形缓冲区”写入字节（每个uint16低8位有效），返回实际写入个数 */
 typedef uint16_t (*APP_PROTO_WriteFn)(const uint16_t *pData, uint16_t len, void *pUser);
+
+/* Optional lock/unlock around polling (non-zero return means locked) */
+typedef uint16_t (*APP_PROTO_LockFn)(void *pUser);
+typedef void (*APP_PROTO_UnlockFn)(void *pUser);
+
 
 typedef enum
 {
@@ -111,12 +157,19 @@ typedef struct
     void                  *pReadUser;
     APP_PROTO_WriteFn      writeFn;
     void                  *pWriteUser;
+    APP_PROTO_LockFn        lockFn;
+    APP_PROTO_UnlockFn      unlockFn;
+    void                   *pLockUser;
+
 
 } APP_PROTO_Ctx;
 
 /* ============================================================================
  * API
  * ========================================================================== */
+APP_PROTO_Ctx *APP_PROTO_GetChannelCtx(uint16_t ch);
+uint16_t APP_PROTO_IsChannelEnabled(uint16_t ch);
+
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
 void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
 void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,

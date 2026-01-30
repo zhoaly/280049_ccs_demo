@@ -7,22 +7,7 @@
  * 同时为后续性能优化、故障排查提供参考。
  */
 
-#include "app_FOC.h"
-#include "app_FOC_OpenLoop.h"
-#include "app_FOC_CloseLoop.h"
-#include "app_log.h"
-#include "drv_epwm.h"
-#include "drv_eqep.h"
-
-
-#include "c2000_freertos.h"
-#include "device.h"
-#include "board.h"
-#include "math.h"
-#include "driverlib/gpio.h"
-#include "driverlib/epwm.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/pin_map.h"
+#include "__INCLUDE.h"
 
 static const char * TAG ="FOC";
 

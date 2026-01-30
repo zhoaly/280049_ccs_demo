@@ -3,12 +3,7 @@
  * @brief SPI 驱动实现文件，完成 SPI 外设初始化与 DRV8316 兼容绑定。
  */
 
-#include "drv_spi.h"
-
-#include "device.h"
-#include "driverlib/gpio.h"
-#include "driverlib/spi.h"
-#include "driverlib/sysctl.h"
+#include "__INCLUDE.h"
 
 #define DRV_SPI_DEFAULT_BASE            (SPIA_BASE)        /**< 默认使用 SPIA 外设作为通信控制器。 */
 #define DRV_SPI_DEFAULT_BITRATE_HZ      (1000000UL)        /**< 默认 SPI 波特率 1 MHz，兼顾 DRV8316 的时序要求与 EMC。 */

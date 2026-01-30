@@ -3,13 +3,7 @@
  * @brief ePWM 驱动实现文件，完成互补 PWM 初始化、参数配置与状态查询。
  */
 
-#include "drv_epwm.h"
-
-#include "device.h"
-#include "driverlib/gpio.h"
-#include "driverlib/epwm.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/pin_map.h"
+#include "__INCLUDE.h"
 
 #define DRV_EPWM_DEFAULT_FREQUENCY_HZ      (20000UL) /**< 默认 PWM 开关频率，单位 Hz。 */
 #define DRV_EPWM_DEFAULT_DUTY              (0.5f)    /**< 默认占空比（0.0~1.0）。 */

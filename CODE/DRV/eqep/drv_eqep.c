@@ -3,13 +3,7 @@
  * @brief eQEP 驱动实现，面向磁编码器的角度与速度采集。
  */
 
-#include "drv_eqep.h"
-
-#include "device.h"
-#include "driverlib/eqep.h"
-#include "driverlib/gpio.h"
-#include "driverlib/pin_map.h"
-#include "driverlib/sysctl.h"
+#include "__INCLUDE.h"
 
 #define DRV_EQEP_DEFAULT_COUNTS_PER_REV   (4096L)  /**< 默认磁编码器分辨率（14bit）。 */
 #define DRV_EQEP_DEFAULT_POLE_PAIRS       (7UL)      /**< 默认极对数*/ 

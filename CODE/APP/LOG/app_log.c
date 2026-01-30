@@ -3,12 +3,7 @@
  * @brief APP 层异步日志实现，利用现有 SCI 驱动输出日志。
  */
 
-#include "app_log.h"
-#include "drv_sci.h"
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
+#include "__INCLUDE.h"
 
 /* 运行时日志级别，初始为编译期默认值 */
 static volatile app_log_level_t s_appLogRuntimeLevel = APP_LOG_GLOBAL_LEVEL;

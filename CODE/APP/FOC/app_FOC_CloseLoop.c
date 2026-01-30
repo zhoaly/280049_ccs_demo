@@ -3,11 +3,7 @@
  * @brief 位置-电压 PI 闭环控制实现。
  */
 
-#include "app_FOC_CloseLoop.h"
-
-#include <math.h>
-
-#include "drv_eqep.h"
+#include "__INCLUDE.h"
 
 /**
  * @brief 计算带限 PI 控制输出。

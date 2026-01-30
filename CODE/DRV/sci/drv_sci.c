@@ -3,19 +3,7 @@
  * @brief SCI 驱动实现，兼容 SysCfg 配置与手动初始化两种模式。
  */
 
-#include "drv_sci.h"
-
-#include "device.h"
-#include "driverlib/gpio.h"
-#include "driverlib/interrupt.h"
-#include "driverlib/sci.h"
-#include "driverlib/sysctl.h"
-
-#if DRV_SCI_USE_SYSCFG
-#include "board.h"
-#include "FreeRTOS.h"
-#include "c2000_freertos.h"
-#endif
+#include "__INCLUDE.h"
 
 #define DRV_SCI_DEFAULT_BASE         (SCIA_BASE)
 #define DRV_SCI_DEFAULT_BAUDRATE     (115200UL)
