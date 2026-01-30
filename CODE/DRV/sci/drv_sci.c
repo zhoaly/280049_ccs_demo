@@ -14,7 +14,7 @@
 #if DRV_SCI_USE_SYSCFG
 #include "board.h"
 #include "FreeRTOS.h"
-#include "task.h"
+#include "c2000_freertos.h"
 #endif
 
 #define DRV_SCI_DEFAULT_BASE         (SCIA_BASE)
@@ -156,6 +156,7 @@ void DRV_SCI_init(void)
     DRV_SCI_configureGPIO();
     DRV_SCI_configureModule();
 #endif
+    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
     
     s_sci.state.initialized = true;
 }

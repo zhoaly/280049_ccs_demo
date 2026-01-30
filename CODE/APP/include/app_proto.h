@@ -10,7 +10,9 @@ extern "C" {
 #include "drv_sci.h"
 #include "app_log.h"
 #include "FreeRTOS.h"
-#include "task.h"
+#include "board.h"
+#include "FreeRTOS.h"
+#include "c2000_freertos.h"
 /* ============================================================================
  * 协议配置
  * ========================================================================== */

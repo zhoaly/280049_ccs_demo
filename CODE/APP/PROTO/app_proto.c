@@ -204,9 +204,10 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 
             /* 完整帧成功 调用hand */
             pCtx->cntOkFrames++;
-
+            
             if (pCtx->handler != (APP_PROTO_FrameHandler)0)
             {
+                
                 pCtx->handler(pCtx->cmd,
                               pCtx->payload,
                               pCtx->len,
@@ -237,6 +238,7 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
  * - 可在此函数中初始化 APP_PROTO，并周期调用 APP_PROTO_Poll() 进行解析。
  * - 建议结合事件/信号量，在有新数据时唤醒任务以降低 CPU 占用。
  */
+
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
@@ -493,6 +495,8 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
             {
                 APP_LOGI0(TAG, "Receive WRITE CMD \n");
+
+                APP_PROTO_SlaveWrite(&s_protoCtx,(const uint16_t *)pPayload,len);
             }
         } break;
 
@@ -562,7 +566,12 @@ void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
 
 void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
 {
-    APP_PROTO_CorePoll(pCtx);
+
+    if(xSemaphoreTake(SCI0Tx_SemaphoreHandle, portMAX_DELAY) == pdTRUE){
+        APP_PROTO_CorePoll(pCtx);
+        xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+    }
+    
 }
 
 uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
