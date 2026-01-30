@@ -11,6 +11,8 @@
 /* ============================================================================
  * 静态变量
  * ========================================================================== */
+static const char * TAG ="proto";
+ 
 static APP_PROTO_Ctx s_protoCtx;
 /* ============================================================================
  * 内部静态函数
@@ -238,14 +240,14 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
-    // APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
+    APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
     
-    // APP_PROTO_RegisterIO(&s_protoCtx,
-    //                      APP_ProtoRead,  (void *)0,
-    //                      APP_ProtoWrite, (void *)0);
+    APP_PROTO_RegisterIO(&s_protoCtx,
+                         APP_ProtoRead,  (void *)0,
+                         APP_ProtoWrite, (void *)0);
     while (1)
     {
-        // APP_PROTO_Poll(&s_protoCtx);
+        APP_PROTO_Poll(&s_protoCtx);
         vTaskDelay(pdTICKS_TO_MS(10));
         
     }
@@ -490,13 +492,16 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
         {
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
             {
-                // cmdOk = 1u;
-                GPIO_togglePin(myLED2_GPIO);
+                APP_LOGI0(TAG, "Receive WRITE CMD \n");
             }
         } break;
 
         case APP_PROTO_CMD_READ:
         {
+            if ((pPayload != (const uint16_t *)0) && (len > 0u))
+            {
+                APP_LOGI0(TAG, "Receive READ CMD \n");
+            }
 
         } break;
 

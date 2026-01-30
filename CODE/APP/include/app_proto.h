@@ -8,6 +8,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "drv_sci.h"
+#include "app_log.h"
 #include "FreeRTOS.h"
 #include "task.h"
 /* ============================================================================
