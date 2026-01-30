@@ -1,5 +1,7 @@
 /* app_proto.c */
 #include "app_proto.h"
+#include "device.h"
+#include "board.h"
 
 /* ============================================================================
  * 全局变量
@@ -26,8 +28,13 @@ static uint16_t APP_ProtoRead(uint16_t *pBuf, uint16_t len, void *pUser)
 static uint16_t APP_ProtoWrite(const uint16_t *pData, uint16_t len, void *pUser)
 {
     (void)pUser;
-    return DRV_SCI0_TxWriteBytes(pData, len);
+    return DRV_SCI0_TxWriteBytes(pData, len);//TODO:当前存在bug,会和LOG模块冲突,应实现原子化操作(似乎应在任务中自行实现)
 }
+
+static void PROTO_Handler(APP_PROTO_Cmd cmd,
+                          const uint16_t *pPayload,
+                          uint16_t len,
+                          void *pUser);
 
 
 /**
@@ -41,14 +48,12 @@ static uint16_t APP_ProtoWrite(const uint16_t *pData, uint16_t len, void *pUser)
  * - 仅允许协议定义的命令字（WRITE/READ/预留）。
  * - 非法命令会触发解析错误并进行丢帧重同步。
  */
-static inline uint16_t APP_PROTO_IsCmdValid(uint16_t cmd)
+static inline uint16_t APP_PROTO_IsCmdValid(APP_PROTO_Cmd cmd)
 {
-    cmd = (uint16_t)(cmd & 0x00FFu);
+    uint16_t cmdByte = (uint16_t)(((uint16_t)cmd) & 0x00FFu);
 
-    return (uint16_t)((cmd == (APP_PROTO_CMD_WRITE & 0x00FFu)) ||
-                      (cmd == (APP_PROTO_CMD_READ  & 0x00FFu)) ||
-                      (cmd == (APP_PROTO_CMD_RSVD3 & 0x00FFu)) ||
-                      (cmd == (APP_PROTO_CMD_RSVD4 & 0x00FFu)));
+    return (uint16_t)((cmdByte == (uint16_t)APP_PROTO_CMD_WRITE) ||
+                      (cmdByte == (uint16_t)APP_PROTO_CMD_READ));
 }
 
 /**
@@ -63,7 +68,7 @@ static inline uint16_t APP_PROTO_IsCmdValid(uint16_t cmd)
 static void APP_PROTO_Reset(APP_PROTO_Ctx *pCtx)
 {
     pCtx->state = APP_PROTO_ST_WAIT_SOF;
-    pCtx->cmd   = 0u;
+    pCtx->cmd   = (APP_PROTO_Cmd)0u;
     pCtx->len   = 0u;
     pCtx->idx   = 0u;
 }
@@ -97,7 +102,7 @@ static void APP_PROTO_OnError(APP_PROTO_Ctx *pCtx, APP_PROTO_Error err, uint16_t
     if ( (uint16_t)(curByte & 0x00FFu) == (uint16_t)(APP_PROTO_SOF & 0x00FFu) )
     {
         pCtx->state = APP_PROTO_ST_WAIT_CMD;
-        pCtx->cmd   = 0u;
+        pCtx->cmd   = (APP_PROTO_Cmd)0u;
         pCtx->len   = 0u;
         pCtx->idx   = 0u;
     }
@@ -144,13 +149,13 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 
         case APP_PROTO_ST_WAIT_CMD:
         {
-            if (APP_PROTO_IsCmdValid(byte) == 0u)
+            if (APP_PROTO_IsCmdValid((APP_PROTO_Cmd)byte) == 0u)
             {
                 APP_PROTO_OnError(pCtx, APP_PROTO_ERR_CMD, byte);
                 break;
             }
 
-            pCtx->cmd   = byte;
+            pCtx->cmd   = (APP_PROTO_Cmd)byte;
             pCtx->state = APP_PROTO_ST_WAIT_LEN;
         } break;
 
@@ -195,12 +200,12 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
                 break;
             }
 
-            /* 完整帧成功 */
+            /* 完整帧成功 调用hand */
             pCtx->cntOkFrames++;
 
             if (pCtx->handler != (APP_PROTO_FrameHandler)0)
             {
-                pCtx->handler((uint16_t)(pCtx->cmd & 0x00FFu),
+                pCtx->handler(pCtx->cmd,
                               pCtx->payload,
                               pCtx->len,
                               pCtx->pHandlerUser);
@@ -233,15 +238,16 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
-    APP_PROTO_Init(&s_protoCtx , ( APP_PROTO_FrameHandler) NULL, (void *)NULL);
+    // APP_PROTO_Init(&s_protoCtx, PROTO_Handler, (void *)0);
     
-    APP_PROTO_RegisterIO(&s_protoCtx,
-                         APP_ProtoRead,  (void *)0,
-                         APP_ProtoWrite, (void *)0);
+    // APP_PROTO_RegisterIO(&s_protoCtx,
+    //                      APP_ProtoRead,  (void *)0,
+    //                      APP_ProtoWrite, (void *)0);
     while (1)
     {
-        APP_PROTO_Poll(&s_protoCtx);
+        // APP_PROTO_Poll(&s_protoCtx);
         vTaskDelay(pdTICKS_TO_MS(10));
+        
     }
 }
 
@@ -258,7 +264,7 @@ void PROTO_Task_Func(void *pvParameters)
  * - IO 回调默认置空，需通过 APP_PROTO_RegisterIO() 注册。
  * - 解析成功后将调用 handler(cmd, payload, len, pUser)。
  */
-void APP_PROTO_Init(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
+static void APP_PROTO_CoreInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
 {
     if (pCtx == (APP_PROTO_Ctx *)0)
     {
@@ -297,11 +303,11 @@ void APP_PROTO_Init(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *p
  * - 协议层不直接依赖 SCI/SPI/USB 等底层；通过注册回调实现解耦。
  * - 可单独注册读或写（另一个可传 NULL）。
  */
-void APP_PROTO_RegisterIO(APP_PROTO_Ctx *pCtx,
-                          APP_PROTO_ReadFn readFn,
-                          void *pReadUser,
-                          APP_PROTO_WriteFn writeFn,
-                          void *pWriteUser)
+static void APP_PROTO_CoreRegisterIO(APP_PROTO_Ctx *pCtx,
+                                     APP_PROTO_ReadFn readFn,
+                                     void *pReadUser,
+                                     APP_PROTO_WriteFn writeFn,
+                                     void *pWriteUser)
 {
     if (pCtx == (APP_PROTO_Ctx *)0)
     {
@@ -324,7 +330,7 @@ void APP_PROTO_RegisterIO(APP_PROTO_Ctx *pCtx,
  * - 每次 Poll 会循环读取多批数据，直到读不到数据或达到 APP_PROTO_POLL_MAX_ROUNDS。
  * - 解析器仅依赖已注册 readFn，不直接依赖底层通信方式。
  */
-void APP_PROTO_Poll(APP_PROTO_Ctx *pCtx)
+static void APP_PROTO_CorePoll(APP_PROTO_Ctx *pCtx)
 {
     uint16_t rxBuf[APP_PROTO_POLL_READ_CHUNK];
     uint16_t n;
@@ -379,22 +385,23 @@ void APP_PROTO_Poll(APP_PROTO_Ctx *pCtx)
  * - cmd 非法
  * - outCap 不足以容纳完整帧
  */
-uint16_t APP_PROTO_BuildFrame(uint16_t cmd,
-                              const uint16_t *pPay,
-                              uint16_t len,
-                              uint16_t *pOutU16,
-                              uint16_t outCap)
+static uint16_t APP_PROTO_CoreBuildFrame(APP_PROTO_Cmd cmd,
+                                         const uint16_t *pPay,
+                                         uint16_t len,
+                                         uint16_t *pOutU16,
+                                         uint16_t outCap)
 {
     uint16_t need;
     uint16_t pos = 0u;
     uint16_t k;
+    uint16_t cmdByte;
 
     if ((pOutU16 == (uint16_t *)0) || (outCap == 0u))
     {
         return 0u;
     }
 
-    cmd = (uint16_t)(cmd & 0x00FFu);
+    cmdByte = (uint16_t)(((uint16_t)cmd) & 0x00FFu);
 
     if ((len > (uint16_t)APP_PROTO_MAX_PAYLOAD) || (APP_PROTO_IsCmdValid(cmd) == 0u))
     {
@@ -409,7 +416,7 @@ uint16_t APP_PROTO_BuildFrame(uint16_t cmd,
     }
 
     pOutU16[pos++] = (uint16_t)(APP_PROTO_SOF & 0x00FFu);
-    pOutU16[pos++] = (uint16_t)(cmd & 0x00FFu);
+    pOutU16[pos++] = cmdByte;
 
     /* LEN 字段语义按 1Byte 使用（低8位有效） */
     pOutU16[pos++] = (uint16_t)(len & 0x00FFu);
@@ -439,10 +446,10 @@ uint16_t APP_PROTO_BuildFrame(uint16_t cmd,
  * - 必须先调用 APP_PROTO_RegisterIO() 注册 writeFn，否则直接返回 0。
  * - writeFn 返回值可能小于帧长度（例如发送缓冲区满），上层可据此做重发/补发策略。
  */
-uint16_t APP_PROTO_SendFrame(APP_PROTO_Ctx *pCtx,
-                             uint16_t cmd,
-                             const uint16_t *pPay,
-                             uint16_t len)
+static uint16_t APP_PROTO_CoreSendFrame(APP_PROTO_Ctx *pCtx,
+                                        APP_PROTO_Cmd cmd,
+                                        const uint16_t *pPay,
+                                        uint16_t len)
 {
     uint16_t frameU16[1u + 1u + 1u + APP_PROTO_MAX_PAYLOAD + 1u];
     uint16_t frameLen;
@@ -457,7 +464,7 @@ uint16_t APP_PROTO_SendFrame(APP_PROTO_Ctx *pCtx,
         return 0u;
     }
 
-    frameLen = APP_PROTO_BuildFrame(cmd, pPay, len,
+    frameLen = APP_PROTO_CoreBuildFrame(cmd, pPay, len,
                                     frameU16,
                                     (uint16_t)(sizeof(frameU16) / sizeof(frameU16[0])));
     if (frameLen == 0u)
@@ -467,3 +474,103 @@ uint16_t APP_PROTO_SendFrame(APP_PROTO_Ctx *pCtx,
 
     return pCtx->writeFn(frameU16, frameLen, pCtx->pWriteUser);
 }
+
+static void PROTO_Handler(APP_PROTO_Cmd cmd,
+                          const uint16_t *pPayload,
+                          uint16_t len,
+                          void *pUser)
+{
+    // uint16_t cmdOk = 0u;
+
+    (void)pUser;
+
+    switch (cmd)
+    {
+        case APP_PROTO_CMD_WRITE:
+        {
+            if ((pPayload != (const uint16_t *)0) && (len > 0u))
+            {
+                // cmdOk = 1u;
+                GPIO_togglePin(myLED2_GPIO);
+            }
+        } break;
+
+        case APP_PROTO_CMD_READ:
+        {
+
+        } break;
+
+        default:
+        {
+            // cmdOk = 0u;
+        } break;
+    }
+}
+
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
+{
+    APP_PROTO_CoreInit(pCtx, handler, pUser);
+}
+
+void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,
+                                APP_PROTO_ReadFn readFn,
+                                void *pReadUser,
+                                APP_PROTO_WriteFn writeFn,
+                                void *pWriteUser)
+{
+    APP_PROTO_CoreRegisterIO(pCtx, readFn, pReadUser, writeFn, pWriteUser);
+}
+
+void APP_PROTO_MasterPoll(APP_PROTO_Ctx *pCtx)
+{
+    APP_PROTO_CorePoll(pCtx);
+}
+
+uint16_t APP_PROTO_MasterWrite(APP_PROTO_Ctx *pCtx,
+                               const uint16_t *pPay,
+                               uint16_t len)
+{
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_WRITE, pPay, len);
+}
+
+uint16_t APP_PROTO_MasterRead(APP_PROTO_Ctx *pCtx,
+                              const uint16_t *pPay,
+                              uint16_t len)
+{
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_READ, pPay, len);
+}
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+void APP_PROTO_SlaveInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
+{
+    APP_PROTO_CoreInit(pCtx, handler, pUser);
+}
+
+void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
+                               APP_PROTO_ReadFn readFn,
+                               void *pReadUser,
+                               APP_PROTO_WriteFn writeFn,
+                               void *pWriteUser)
+{
+    APP_PROTO_CoreRegisterIO(pCtx, readFn, pReadUser, writeFn, pWriteUser);
+}
+
+void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
+{
+    APP_PROTO_CorePoll(pCtx);
+}
+
+uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
+                              const uint16_t *pPay,
+                              uint16_t len)
+{
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_WRITE, pPay, len);
+}
+
+uint16_t APP_PROTO_SlaveRead(APP_PROTO_Ctx *pCtx,
+                             const uint16_t *pPay,
+                             uint16_t len)
+{
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_READ, pPay, len);
+}
+#endif

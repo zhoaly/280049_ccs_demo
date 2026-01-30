@@ -16,10 +16,23 @@ extern "C" {
 #define APP_PROTO_SOF                (0x00A5u)
 #define APP_PROTO_EOF                (0x005Au)
 
-#define APP_PROTO_CMD_WRITE          (0x0001u)
-#define APP_PROTO_CMD_READ           (0x0002u)
-#define APP_PROTO_CMD_RSVD3          (0x0003u)
-#define APP_PROTO_CMD_RSVD4          (0x0004u)
+#define APP_PROTO_ROLE_MASTER        (1u)
+#define APP_PROTO_ROLE_SLAVE         (2u)
+
+#ifndef APP_PROTO_ROLE
+#define APP_PROTO_ROLE               (APP_PROTO_ROLE_SLAVE)
+#endif
+
+#if (APP_PROTO_ROLE != APP_PROTO_ROLE_MASTER) && (APP_PROTO_ROLE != APP_PROTO_ROLE_SLAVE)
+#error "APP_PROTO_ROLE must be APP_PROTO_ROLE_MASTER or APP_PROTO_ROLE_SLAVE"
+#endif
+
+typedef enum
+{
+    APP_PROTO_CMD_WRITE = 0x01u,  /* Master -> Slave write */
+    APP_PROTO_CMD_READ  = 0x02u,  /* Master <- Slave read  */
+    APP_PROTO_CMD_ACK  = 0x03u    /* Master <- Slave read  */
+} APP_PROTO_Cmd;
 
 /* Payload 最大长度（单位：字节；本实现用 uint16_t 数组承载，每元素低8位有效） */
 #ifndef APP_PROTO_MAX_PAYLOAD
@@ -65,7 +78,7 @@ typedef enum
 /* 完整帧回调：cmd + payload + len
  * 注意：payload 每个 uint16_t 低8位有效；len 为“字节数/元素数”
  */
-typedef void (*APP_PROTO_FrameHandler)(uint16_t cmd,
+typedef void (*APP_PROTO_FrameHandler)(APP_PROTO_Cmd cmd,//TODO 当前未实现handel
                                        const uint16_t *pPayload,
                                        uint16_t len,
                                        void *pUser);
@@ -74,7 +87,7 @@ typedef void (*APP_PROTO_FrameHandler)(uint16_t cmd,
 typedef struct
 {
     APP_PROTO_State  state;
-    uint16_t         cmd;                              /* 低8位有效 */
+    APP_PROTO_Cmd    cmd;                              /* 低8位有效 */
     uint16_t         len;                              /* payload长度（字节数） */
     uint16_t         idx;                              /* payload索引 */
     uint16_t         payload[APP_PROTO_MAX_PAYLOAD];   /* 每元素低8位有效 */
@@ -101,81 +114,49 @@ typedef struct
 /* ============================================================================
  * API
  * ========================================================================== */
-void APP_PROTO_Init(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
+void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,
+                                APP_PROTO_ReadFn readFn,
+                                void *pReadUser,
+                                APP_PROTO_WriteFn writeFn,
+                                void *pWriteUser);
+void APP_PROTO_MasterPoll(APP_PROTO_Ctx *pCtx);
+uint16_t APP_PROTO_MasterWrite(APP_PROTO_Ctx *pCtx,
+                            const uint16_t *pPay,
+                            uint16_t len);
+uint16_t APP_PROTO_MasterRead(APP_PROTO_Ctx *pCtx,
+                            const uint16_t *pPay,
+                            uint16_t len);
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+void APP_PROTO_SlaveInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
+void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
+                            APP_PROTO_ReadFn readFn,
+                            void *pReadUser,
+                            APP_PROTO_WriteFn writeFn,
+                            void *pWriteUser);
+void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx);
+uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
+                            const uint16_t *pPay,
+                            uint16_t len);
+uint16_t APP_PROTO_SlaveRead(APP_PROTO_Ctx *pCtx,
+                            const uint16_t *pPay,
+                            uint16_t len);
+#endif
 
-/**
- * @brief 注册协议 IO（读/写）回调函数
- *
- * @param[in,out] pCtx        协议上下文
- * @param[in]     readFn      读回调：从环形缓冲区读取（每个uint16低8位有效）
- * @param[in]     pReadUser   读回调用户参数
- * @param[in]     writeFn     写回调：向发送缓冲区写入（每个uint16低8位有效）
- * @param[in]     pWriteUser  写回调用户参数
- *
- * 说明：
- * - 协议层不直接依赖 SCI/SPI/USB 等底层；通过注册回调实现解耦。
- * - 可单独注册读或写（另一个可传 NULL）。
- */
-void APP_PROTO_RegisterIO(APP_PROTO_Ctx *pCtx,
-                          APP_PROTO_ReadFn readFn,
-                          void *pReadUser,
-                          APP_PROTO_WriteFn writeFn,
-                          void *pWriteUser);
-
-/**
- * @brief 协议轮询解析：使用已注册 readFn 从环形缓冲区读取并按帧解析
- *
- * @param[in,out] pCtx 协议上下文
- *
- * 说明：
- * - 必须先调用 APP_PROTO_RegisterIO() 注册 readFn，否则本函数直接返回。
- * - 每次 Poll 会循环读取多批数据，直到读不到数据或达到 APP_PROTO_POLL_MAX_ROUNDS。
- * - 解析器仅依赖已注册 readFn，不直接依赖底层通信方式。
- */
-void APP_PROTO_Poll(APP_PROTO_Ctx *pCtx);
-
-/**
- * @brief 组帧：SOF + CMD + LEN + PAYLOAD + EOF
- *
- * @param[in]  cmd     命令字（低8位有效）
- * @param[in]  pPay    payload 指针（len=0 时可为 NULL；每元素低8位有效）
- * @param[in]  len     payload 长度（单位：字节/元素个数，<= APP_PROTO_MAX_PAYLOAD）
- * @param[out] pOutU16 输出缓冲（uint16 数组，每个元素低 8 位为有效字节）
- * @param[in]  outCap  输出缓冲容量（单位：uint16 元素个数）
- *
- * @return 实际生成的帧长度（单位：字节/uint16 元素个数）；0 表示失败
- *
- * 失败条件：
- * - pOutU16 为空或 outCap 为 0
- * - len 超过最大 payload
- * - cmd 非法
- * - outCap 不足以容纳完整帧
- */
-uint16_t APP_PROTO_BuildFrame(uint16_t cmd,
-                              const uint16_t *pPay,
-                              uint16_t len,
-                              uint16_t *pOutU16,
-                              uint16_t outCap);
-
-/**
- * @brief 发送帧：先组帧再使用已注册 writeFn 写入发送缓冲区
- *
- * @param[in] pCtx 协议上下文
- * @param[in] cmd  命令字（低8位有效）
- * @param[in] pPay payload 指针（len=0 时可为 NULL；每元素低8位有效）
- * @param[in] len  payload 长度（<= APP_PROTO_MAX_PAYLOAD）
- *
- * @return 实际写入发送缓冲区的字节数（uint16 元素个数）；0 表示失败
- *
- * 说明：
- * - 必须先调用 APP_PROTO_RegisterIO() 注册 writeFn，否则直接返回 0。
- * - writeFn 返回值可能小于帧长度（例如发送缓冲区满），上层可据此做重发/补发策略。
- */
-uint16_t APP_PROTO_SendFrame(APP_PROTO_Ctx *pCtx,
-                             uint16_t cmd,
-                             const uint16_t *pPay,
-                             uint16_t len);
-
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+#define APP_PROTO_Init        APP_PROTO_MasterInit
+#define APP_PROTO_RegisterIO  APP_PROTO_MasterRegisterIO
+#define APP_PROTO_Poll        APP_PROTO_MasterPoll
+#define APP_PROTO_SendWrite   APP_PROTO_MasterWrite
+#define APP_PROTO_SendRead    APP_PROTO_MasterRead
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+#define APP_PROTO_Init        APP_PROTO_SlaveInit
+#define APP_PROTO_RegisterIO  APP_PROTO_SlaveRegisterIO
+#define APP_PROTO_Poll        APP_PROTO_SlavePoll
+#define APP_PROTO_SendWrite   APP_PROTO_SlaveWrite
+#define APP_PROTO_SendRead    APP_PROTO_SlaveRead
+#endif
 #ifdef __cplusplus
 }
 #endif
