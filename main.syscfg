@@ -11,15 +11,10 @@
  */
 const led            = scripting.addModule("/driverlib/board_components/led", {}, false);
 const led1           = led.addInstance();
-const led2           = led.addInstance();
 const cputimer       = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1      = cputimer.addInstance();
 const cputimer2      = cputimer.addInstance();
 const device_support = scripting.addModule("/driverlib/device_support.js");
-const gpio           = scripting.addModule("/driverlib/gpio.js", {}, false);
-const gpio3          = gpio.addInstance();
-const gpio4          = gpio.addInstance();
-const gpio5          = gpio.addInstance();
 const sci            = scripting.addModule("/driverlib/sci.js", {}, false);
 const sci1           = sci.addInstance();
 const spi            = scripting.addModule("/driverlib/spi.js", {}, false);
@@ -30,15 +25,10 @@ const FREERTOS1      = FREERTOS.addInstance();
 /**
  * Write custom configuration values to the imported modules.
  */
-led1.$name                  = "myLED1";
+led1.$name                  = "myLED2";
 led1.gpio.writeInitialValue = true;
 led1.gpio.initialValue      = 1;
-led1.gpio.gpioPin.$assign   = "GPIO10";
-
-led2.$name                  = "myLED2";
-led2.gpio.writeInitialValue = true;
-led2.gpio.initialValue      = 1;
-led2.gpio.gpioPin.$assign   = "GPIO6";
+led1.gpio.gpioPin.$assign   = "GPIO6";
 
 const divider1       = system.clockTree["CLBCLKDIV"];
 divider1.divideValue = 4;
@@ -63,33 +53,24 @@ cputimer2.timerPeriod               = 10000000;
 cputimer2.timerInt.enableInterrupt  = true;
 cputimer2.timerInt.interruptHandler = "timer0_ISR";
 
-gpio3.$name           = "FOC_DRV_EN1";
-gpio3.direction       = "GPIO_DIR_MODE_OUT";
-gpio3.gpioPin.$assign = "GPIO23_VSW";
-
-gpio4.$name           = "FOC_DRV_EN2";
-gpio4.direction       = "GPIO_DIR_MODE_OUT";
-gpio4.gpioPin.$assign = "GPIO7";
-
-gpio5.$name           = "FOC_DRV_EN3";
-gpio5.direction       = "GPIO_DIR_MODE_OUT";
-gpio5.gpioPin.$assign = "GPIO9";
-
 sci1.$name                      = "mySCI0";
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
 sci1.enabledFIFOInterrupts      = ["SCI_INT_TXFF"];
+sci1.sci.sci_rxPin.$assign      = "GPIO17";
+sci1.sci.sci_txPin.$assign      = "GPIO16";
 sci1.rxQual.$name               = "myGPIOQUAL2";
 sci1.txQual.$name               = "myGPIOQUAL3";
 sci1.sciTXInt.enableInterrupt   = true;
 
-spi1.$name                    = "mySPI0";
-spi1.registerInterrupts       = true;
-spi1.picoQual.$name           = "myGPIOQUAL0";
-spi1.pociQual.$name           = "myGPIOQUAL1";
-spi1.clkQual.$name            = "myGPIOQUAL4";
-spi1.pteQual.$name            = "myGPIOQUAL5";
-spi1.spiRXInt.enableInterrupt = true;
-spi1.spiTXInt.enableInterrupt = true;
+spi1.$name                   = "mySPI0";
+spi1.registerInterrupts      = true;
+spi1.spi.$assign             = "SPIA";
+spi1.spi.spi_picoPin.$assign = "GPIO8";
+spi1.spi.spi_pociPin.$assign = "GPIO10";
+spi1.picoQual.$name          = "myGPIOQUAL0";
+spi1.pociQual.$name          = "myGPIOQUAL1";
+spi1.clkQual.$name           = "myGPIOQUAL4";
+spi1.pteQual.$name           = "myGPIOQUAL5";
 
 FREERTOS1.$name                       = "myFREERTOS0";
 FREERTOS1.MINIMAL_STACK_SIZE          = 256;
@@ -124,11 +105,6 @@ FREERTOS1.queues[0].queueLength       = 50;
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-sci1.sci.$suggestSolution             = "SCIA";
-sci1.sci.sci_rxPin.$suggestSolution   = "GPIO28";
-sci1.sci.sci_txPin.$suggestSolution   = "GPIO2";
-spi1.spi.$suggestSolution             = "SPIA";
-spi1.spi.spi_picoPin.$suggestSolution = "GPIO16";
-spi1.spi.spi_pociPin.$suggestSolution = "GPIO17";
-spi1.spi.spi_clkPin.$suggestSolution  = "GPIO18_X2";
-spi1.spi.spi_ptePin.$suggestSolution  = "GPIO11";
+sci1.sci.$suggestSolution            = "SCIA";
+spi1.spi.spi_clkPin.$suggestSolution = "GPIO18_X2";
+spi1.spi.spi_ptePin.$suggestSolution = "GPIO11";

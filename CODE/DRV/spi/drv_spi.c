@@ -223,3 +223,15 @@ void DRV_SPI_attachToDRV8316(DRV8316_Handle handle, uint32_t csGpio, uint32_t en
 
     DRV8316_setSPIHandle(handle, s_spiState.base);
 }
+
+
+__interrupt void INT_mySPI0_RX_ISR(void){
+
+    
+}
+
+
+__interrupt void INT_mySPI0_TX_ISR(void){
+
+    
+}

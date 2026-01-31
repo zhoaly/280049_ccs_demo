@@ -258,9 +258,9 @@ void FOC_RunZeroCalibration(FOC_Handle *handle)
 static void FOC_DriverEnable()
 {
 
-    GPIO_writePin(FOC_DRV_EN1,1);//使能
-    GPIO_writePin(FOC_DRV_EN2,1);
-    GPIO_writePin(FOC_DRV_EN3,1);
+    // GPIO_writePin(FOC_DRV_EN1,1);//使能
+    // GPIO_writePin(FOC_DRV_EN2,1);
+    // GPIO_writePin(FOC_DRV_EN3,1);
 
 }
 

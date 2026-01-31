@@ -62,7 +62,7 @@ void main(void)
     // DRV_EQEP_init();
     DRV_SCI_init();
     //ePWMConfigurationTemplate(EPWM1_BASE);
-    //GPIO_writePin(myLED1_GPIO,1);
+    // GPIO_writePin(myLED1_GPIO,1);
 
     EDIS;
 
@@ -101,7 +101,7 @@ void myTask0_func(void * pvParameters){//辅助功能?
         // APP_LOGI1S(TAG, "%s", testdata);
         APP_LOGI0(TAG, "task running \n");
         
-        GPIO_togglePin(myLED1_GPIO);//rtos运行正常标志
+        GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
         
 
     }
@@ -128,7 +128,7 @@ __interrupt void timer1_ISR( void )//1ms触发
 
     //GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
     
-    xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
+    // xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
     //DRV_EPWM_getState(&epwmstate0);
 
 
@@ -145,7 +145,7 @@ void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
     /* 当 configCHECK_FOR_STACK_OVERFLOW 定义为 1 或 2 时执行运行时堆栈溢出检查。
     如果检测到堆栈溢出，将调用此钩子函数。 */
 
-    GPIO_writePin(myLED1_GPIO,0);
+    // GPIO_writePin(myLED1_GPIO,0);
     GPIO_writePin(myLED2_GPIO,0);//栈溢出标志 灭灯
     
     taskDISABLE_INTERRUPTS();
