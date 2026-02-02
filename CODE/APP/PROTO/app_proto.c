@@ -37,6 +37,18 @@ static uint16_t APP_ProtoWriteSci0(const uint16_t *pData, uint16_t len, void *pU
     return DRV_SCI0_TxWriteBytes(pData, len);
 }
 
+static uint16_t APP_ProtoReadSpi0(uint16_t *pBuf, uint16_t len, void *pUser)
+{
+    (void)pUser;
+    return DRV_SPI0_RxReadWords(pBuf, len);
+}
+
+static uint16_t APP_ProtoWriteSpi0(const uint16_t *pData, uint16_t len, void *pUser)
+{
+    (void)pUser;
+    return DRV_SPI0_TxWriteWords(pData, len);
+}
+
 static uint16_t APP_ProtoReadNone(uint16_t *pBuf, uint16_t len, void *pUser)
 {
     (void)pBuf;
@@ -98,10 +110,21 @@ uint16_t APP_PROTO_IsChannelEnabled(uint16_t ch)
     return channel->enabled;
 }
 
-static void PROTO_Handler(APP_PROTO_Cmd cmd,
-                          const uint16_t *pPayload,
-                          uint16_t len,
-                          void *pUser);
+/**
+ * @brief Slave 侧帧处理回调（完整帧到达时由解析器调用）。
+ */
+static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
+                               const uint16_t *pPayload,
+                               uint16_t len,
+                               void *pUser);
+
+/**
+ * @brief Master 侧帧处理回调（完整帧到达时由解析器调用）。
+ */
+static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
+                                const uint16_t *pPayload,
+                                uint16_t len,
+                                void *pUser);
 
 
 /**
@@ -304,6 +327,16 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
  * - 建议结合事件/信号量，在有新数据时唤醒任务以降低 CPU 占用。
  */
 
+/**
+ * @brief 绑定通道的读写 IO 与可选锁（不同设备使用不同驱动实现）。
+ *
+ * @param[in,out] ch 通道结构体指针。
+ *
+ * 说明：
+ * - 依据通道配置的设备类型选择 SCI/SPI/None；
+ * - SCI/SPI 可选绑定互斥锁，保证发送原子化；
+ * - 未启用或无效通道则直接返回。
+ */
 static void APP_PROTO_ChannelBindIO(APP_PROTO_Channel *ch)
 {
     if (ch == (APP_PROTO_Channel *)0)
@@ -329,8 +362,8 @@ static void APP_PROTO_ChannelBindIO(APP_PROTO_Channel *ch)
         case APP_PROTO_DEV_SPI0:
         {
             APP_PROTO_RegisterIO(&ch->ctx,
-                                 APP_ProtoReadNone,  (void *)0,
-                                 APP_ProtoWriteNone, (void *)0);
+                                 APP_ProtoReadSpi0,  (void *)0,
+                                 APP_ProtoWriteSpi0, (void *)0);
         } break;
 
         case APP_PROTO_DEV_NONE:
@@ -343,6 +376,15 @@ static void APP_PROTO_ChannelBindIO(APP_PROTO_Channel *ch)
     }
 }
 
+/**
+ * @brief 初始化单个通道（上下文初始化 + IO 绑定）。
+ *
+ * @param[in,out] ch 通道结构体指针。
+ *
+ * 说明：
+ * - 按 APP_PROTO_ROLE 选择 Master/Slave 回调；
+ * - 仅对已使能的通道生效。
+ */
 static void APP_PROTO_ChannelInitOne(APP_PROTO_Channel *ch)
 {
     if ((ch == (APP_PROTO_Channel *)0) || (ch->enabled == 0u))
@@ -350,10 +392,20 @@ static void APP_PROTO_ChannelInitOne(APP_PROTO_Channel *ch)
         return;
     }
 
-    APP_PROTO_Init(&ch->ctx, PROTO_Handler, (void *)ch);
+    /* 依据角色选择不同的帧处理回调 */
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    APP_PROTO_Init(&ch->ctx, PROTO_MasterHandler, (void *)ch);
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+    APP_PROTO_Init(&ch->ctx, PROTO_SlaveHandler, (void *)ch);
+#else
+    APP_PROTO_Init(&ch->ctx, (APP_PROTO_FrameHandler)0, (void *)ch);
+#endif
     APP_PROTO_ChannelBindIO(ch);
 }
 
+/**
+ * @brief 初始化所有通道。
+ */
 static void APP_PROTO_ChannelInitAll(void)
 {
     uint16_t i;
@@ -364,6 +416,11 @@ static void APP_PROTO_ChannelInitAll(void)
     }
 }
 
+/**
+ * @brief 轮询单个通道并解析协议数据。
+ *
+ * @param[in,out] ch 通道结构体指针。
+ */
 static void APP_PROTO_ChannelPollOne(APP_PROTO_Channel *ch)
 {
     if ((ch == (APP_PROTO_Channel *)0) || (ch->enabled == 0u))
@@ -374,6 +431,9 @@ static void APP_PROTO_ChannelPollOne(APP_PROTO_Channel *ch)
     APP_PROTO_Poll(&ch->ctx);
 }
 
+/**
+ * @brief 轮询所有通道并解析协议数据。
+ */
 static void APP_PROTO_ChannelPollAll(void)
 {
     uint16_t i;
@@ -384,17 +444,48 @@ static void APP_PROTO_ChannelPollAll(void)
     }
 }
 
+/**
+ * @brief 协议任务入口：初始化通道并周期轮询解析。
+ *
+ * @param[in] pvParameters 任务参数（未使用）。
+ *
+ * 说明：
+ * - 该任务仅负责解析与回调，不负责创建通道；
+ * - Master/Slave 由 APP_PROTO_ROLE 编译时确定。
+ */
 void PROTO_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
 
+    /* 初始化全部通道（包含 IO 绑定与回调注册） */
     APP_PROTO_ChannelInitAll();
 
     while (1)
     {
+        /* 按角色轮询解析（Master/Slave 由条件编译控制） */
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
         APP_PROTO_ChannelPollAll();
+        /* Master 可在此处扩展周期性发送逻辑 */
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+        APP_PROTO_ChannelPollAll();
+#else
+        APP_PROTO_ChannelPollAll();
+#endif
         vTaskDelay(pdTICKS_TO_MS(10));
     }
+}
+
+void APP_PROTO_InitAll(void)
+{
+    /**
+     * @brief 初始化所有协议通道并完成 IO 绑定。
+     *
+     * 说明：
+     * - 依据 APP_PROTO_CHx_ENABLE / APP_PROTO_CHx_DEV 进行通道开关与设备绑定；
+     * - 仅初始化协议上下文与回调，不创建/启动任务；
+     * - 建议在系统启动阶段调用一次。
+     */
+    APP_PROTO_ChannelInitAll();
 }
 
 
@@ -419,6 +510,7 @@ static void APP_PROTO_CoreInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handl
         return;
     }
 
+    pCtx->initialized  = 1u;
     pCtx->handler      = handler;
     pCtx->pHandlerUser = pUser;
 
@@ -627,10 +719,105 @@ static uint16_t APP_PROTO_CoreSendFrame(APP_PROTO_Ctx *pCtx,
     return pCtx->writeFn(frameU16, frameLen, pCtx->pWriteUser);
 }
 
-static void PROTO_Handler(APP_PROTO_Cmd cmd,
-                          const uint16_t *pPayload,
-                          uint16_t len,
-                          void *pUser)
+
+
+
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+
+/**
+ * @brief Master 侧帧处理：处理从 Slave 返回的帧。
+ *
+ * 说明：
+ * - 当前实现仅做日志示例，便于验证链路；
+ * - 可根据协议需求扩展解析与业务处理。
+ */
+static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
+                                const uint16_t *pPayload,
+                                uint16_t len,
+                                void *pUser)
+{
+    APP_PROTO_Channel *channel = (APP_PROTO_Channel *)pUser;
+
+    switch (cmd)
+    {
+        case APP_PROTO_CMD_WRITE:
+        {
+            if ((pPayload != (const uint16_t *)0) && (len > 0u))
+            {
+                (void)channel;
+                APP_LOGI0(TAG, "Master RX WRITE response\n");
+            }
+        } break;
+
+        case APP_PROTO_CMD_READ:
+        {
+            if ((pPayload != (const uint16_t *)0) && (len > 0u))
+            {
+                (void)channel;
+                APP_LOGI0(TAG, "Master RX READ response\n");
+            }
+        } break;
+
+        default:
+        {
+            /* 其他命令暂不处理 */
+        } break;
+    }
+}
+
+void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
+{
+    APP_PROTO_CoreInit(pCtx, handler, pUser);
+}
+
+void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,
+                                APP_PROTO_ReadFn readFn,
+                                void *pReadUser,
+                                APP_PROTO_WriteFn writeFn,
+                                void *pWriteUser)
+{
+    APP_PROTO_CoreRegisterIO(pCtx, readFn, pReadUser, writeFn, pWriteUser);
+}
+
+void APP_PROTO_MasterPoll(APP_PROTO_Ctx *pCtx)
+{
+    APP_PROTO_CorePoll(pCtx);
+}
+
+uint16_t APP_PROTO_MasterWrite(APP_PROTO_Ctx *pCtx,
+                               const uint16_t *pPay,
+                               uint16_t len)
+{
+    if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
+    {
+        return 0u;
+    }
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_WRITE, pPay, len);
+}
+
+uint16_t APP_PROTO_MasterRead(APP_PROTO_Ctx *pCtx,
+                              const uint16_t *pPay,
+                              uint16_t len)
+{
+    if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
+    {
+        return 0u;
+    }
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_READ, pPay, len);
+}
+#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+
+/**
+ * @brief Slave 侧帧处理：根据命令执行对应逻辑。
+ *
+ * 说明：
+ * - WRITE：打印日志并回写 payload（示例：回环响应）。
+ * - READ ：当前仅打印日志，可扩展读取逻辑。
+ */
+static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
+                               const uint16_t *pPayload,
+                               uint16_t len,
+                               void *pUser)
 {
     // uint16_t cmdOk = 0u;
     APP_PROTO_Channel *channel = (APP_PROTO_Channel *)pUser;
@@ -679,41 +866,6 @@ static void PROTO_Handler(APP_PROTO_Cmd cmd,
 }
 
 
-
-#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
-void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
-{
-    APP_PROTO_CoreInit(pCtx, handler, pUser);
-}
-
-void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,
-                                APP_PROTO_ReadFn readFn,
-                                void *pReadUser,
-                                APP_PROTO_WriteFn writeFn,
-                                void *pWriteUser)
-{
-    APP_PROTO_CoreRegisterIO(pCtx, readFn, pReadUser, writeFn, pWriteUser);
-}
-
-void APP_PROTO_MasterPoll(APP_PROTO_Ctx *pCtx)
-{
-    APP_PROTO_CorePoll(pCtx);
-}
-
-uint16_t APP_PROTO_MasterWrite(APP_PROTO_Ctx *pCtx,
-                               const uint16_t *pPay,
-                               uint16_t len)
-{
-    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_WRITE, pPay, len);
-}
-
-uint16_t APP_PROTO_MasterRead(APP_PROTO_Ctx *pCtx,
-                              const uint16_t *pPay,
-                              uint16_t len)
-{
-    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_READ, pPay, len);
-}
-#elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
 void APP_PROTO_SlaveInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser)
 {
     APP_PROTO_CoreInit(pCtx, handler, pUser);
@@ -758,6 +910,10 @@ uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
                               const uint16_t *pPay,
                               uint16_t len)
 {
+    if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
+    {
+        return 0u;
+    }
     return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_WRITE, pPay, len);
 }
 
@@ -765,6 +921,10 @@ uint16_t APP_PROTO_SlaveRead(APP_PROTO_Ctx *pCtx,
                              const uint16_t *pPay,
                              uint16_t len)
 {
+    if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
+    {
+        return 0u;
+    }
     return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_READ, pPay, len);
 }
 #endif

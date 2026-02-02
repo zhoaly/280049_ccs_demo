@@ -1,6 +1,6 @@
-//分支说明********************************************/
-//通信协议开发测试分支
-// sys include********************************************/
+// Branch notes ********************************************/
+// Protocol development test branch
+// sys include ********************************************/
 #include "__INCLUDE.h"
 
 
@@ -10,54 +10,59 @@ static const char * TAG ="main";
 DRV_EPWM_State epwmstate0 = {};
 DRV_EQEP_State eqepstate0 = {};
 
-//
-// 函数原型
-//
+// Function prototypes
 void vApplicationStackOverflowHook(TaskHandle_t pxTask, char *pcTaskName);
 void vApplicationMallocFailedHook( void );
 void ePWMConfigurationTemplate(uint32_t base);
+static void APP_SemaphoreBatchGive(void);
 
+
+static void APP_SemaphoreBatchGive(void)
+{
+    /* Must be called after FreeRTOS_init */
+    xSemaphoreGive(SCI0Tx_SemaphoreHandle);
+    xSemaphoreGive(SPI0Tx_SemaphoreHandle);
+}
 
 void myTask0_func(void * pvParameters);
 void FOC_Task_Func(void * pvParameters);
 //
-// Timer1,0 中断服务程序
+// Timer1/0 ISRs
 //
 __interrupt void timer1_ISR( void );
 __interrupt void timer0_ISR( void );
 //
-// 主函数
+// Main
 //
 void main(void)
 {
-    // 初始化器件时钟和外设
+    // Init device clock and peripherals
     Device_init();
 
 
-    // 初始化 PIE 并清除 PIE 寄存器，禁用 CPU 中断。
+    // Init PIE and clear PIE regs; disable CPU interrupts
     Interrupt_initModule();
 
-    //初始化GPIO
+    // Init GPIO
     Device_initGPIO();
 
     //
-    // 禁用所有 CPU 中断并清除所有 CPU 中断标志。
+    // Disable all CPU interrupts and clear flags
     //
     DINT;
     IER = 0x0000;
     IFR = 0x0000;
 
     //
-    // 使用指向默认中断服务程序 (ISR) 的指针初始化 PIE 向量表。
+    // Init PIE vector table with default ISRs
     //
     Interrupt_initVectorTable();
 
-    //以下代码由syscfg生成**************************************/
-    // 配置 CPUTimer1 和 LED。
+    // SysCfg generated init
     Board_init();
 
-    EALLOW;//外设配置必须在rtosinit前??
-    //DRV_SPI_init();
+    EALLOW; // Peripheral config before FreeRTOS_init
+    DRV_SPI_init();
     // DRV_EPWM_init();
     // DRV_EQEP_init();
     DRV_SCI_init();
@@ -66,104 +71,96 @@ void main(void)
 
     EDIS;
 
-    // 配置 FreeRTOS
+    // Init FreeRTOS
     FreeRTOS_init();
 
-    //以下为业务代码********************************************/
-    //驱动初始化************************************************/
-
-    
-    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
-
-    
     EINT;
     ERTM;
 
-
-    
     while(1)
-    {    // 正常情况下永远不会执行。
+    {
+        // Should never reach here
     }
 }
 
-uint16_t testdata[20];
-void myTask0_func(void * pvParameters){//辅助功能?
+
+
+void myTask0_func(void * pvParameters)
+{
     (void) pvParameters;
+    const uint16_t testPayload[] = { 'T', 'E', 'S', 'T' };
+    APP_PROTO_Ctx *ctx = (APP_PROTO_Ctx *)0;
+    APP_SemaphoreBatchGive();
 
     while (1) {
-        
-
-        // volatile size_t g_logMsgSize = sizeof(APP_LogMessage);
         vTaskDelay(pdTICKS_TO_MS(1000));
 
-        // DRV_SCI0_RxReadBytes(testdata,20);
+        ctx = APP_PROTO_GetChannelCtx(APP_PROTO_CH1);
+        if (ctx != (APP_PROTO_Ctx *)0)
+        {
+            APP_PROTO_SlaveWrite(ctx,
+                                 testPayload,
+                                 (uint16_t)(sizeof(testPayload) / sizeof(testPayload[0])));
+        }
 
-        // APP_LOGI1S(TAG, "%s", testdata);
         APP_LOGI0(TAG, "task running \n");
-        
-        GPIO_togglePin(myLED2_GPIO);//rtos运行正常标志
-        
+
+        GPIO_togglePin(myLED2_GPIO); // RTOS heartbeat
 
     }
 }
 
 //
-// Timer0 中断服务程序
+// Timer0 ISR (100ms)
 //
-//可以作为时基?
-__interrupt void timer0_ISR( void )//100ms触发
+__interrupt void timer0_ISR( void )
 {
 
-    // GPIO_togglePin(myLED1_GPIO);//计时器运行正常标志
+    // GPIO_togglePin(myLED1_GPIO); // timer heartbeat
 
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP1);
 }
 
 //
-// Timer1 中断服务程序
+// Timer1 ISR (1ms)
 //
-//可以作为时基?
-__interrupt void timer1_ISR( void )//1ms触发
+__interrupt void timer1_ISR( void )
 {
 
-    //GPIO_togglePin(myLED2_GPIO);//计时器运行正常标志
+    // GPIO_togglePin(myLED2_GPIO); // timer heartbeat
     
-    // xSemaphoreGive(TimeBase_SemaphoreHandle);//1ms信号量
+    // xSemaphoreGive(TimeBase_SemaphoreHandle); // 1ms signal
     //DRV_EPWM_getState(&epwmstate0);
 
 
 }
 
 //
-// vApplicationStackOverflowHook - 检查运行时堆栈溢出
+// vApplicationStackOverflowHook - stack overflow handler
 //
 void vApplicationStackOverflowHook( TaskHandle_t pxTask, char *pcTaskName )
 {
     ( void ) pcTaskName;
     ( void ) pxTask;
 
-    /* 当 configCHECK_FOR_STACK_OVERFLOW 定义为 1 或 2 时执行运行时堆栈溢出检查。
-    如果检测到堆栈溢出，将调用此钩子函数。 */
+    /* Called when stack overflow is detected (configCHECK_FOR_STACK_OVERFLOW). */
 
     // GPIO_writePin(myLED1_GPIO,0);
-    GPIO_writePin(myLED2_GPIO,0);//栈溢出标志 灭灯
+    GPIO_writePin(myLED2_GPIO,0); // overflow indicator
     
     taskDISABLE_INTERRUPTS();
     for( ;; );
 }
 
 //
-// vApplicationMallocFailedHook - 捕获 pvPortMalloc() 失败的钩子函数
+// vApplicationMallocFailedHook - pvPortMalloc failure hook
 //
 void vApplicationMallocFailedHook( void )
 {
-    /* 只有当 FreeRTOSConfig.h 中的 configUSE_MALLOC_FAILED_HOOK 设为 1 时，
-    才会调用 vApplicationMallocFailedHook()。该钩子函数会在调用
-    pvPortMalloc() 失败时被触发。内核在创建任务、队列、定时器或信号量时都会
-    内部调用 pvPortMalloc()，演示程序的各个部分也会调用它。如果使用 heap_1.c
-    或 heap_2.c，pvPortMalloc() 可用的堆大小由 FreeRTOSConfig.h 中的
-    configTOTAL_HEAP_SIZE 定义，可以使用 xPortGetFreeHeapSize() API 函数查询
-    剩余的堆空间大小（但该函数无法提供剩余堆空间碎片情况的信息）。 */
+    /* Called on pvPortMalloc() failure when configUSE_MALLOC_FAILED_HOOK=1. */
     taskDISABLE_INTERRUPTS();
     for( ;; );
 }
+
+
+

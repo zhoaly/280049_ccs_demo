@@ -19,6 +19,25 @@ static DRV_SPI_State s_spiState =
     .initialized = false
 };
 
+static volatile uint16_t s_spi0RxStorage[SPI0_RX_BUF_LEN];
+static volatile uint16_t s_spi0TxStorage[SPI0_TX_BUF_LEN];
+
+static DRV_SPI_RingBuffer s_spi0RxQueue =
+{
+    .buffer = s_spi0RxStorage,
+    .length = SPI0_RX_BUF_LEN,
+    .head   = 0U,
+    .tail   = 0U,
+};
+
+static DRV_SPI_RingBuffer s_spi0TxQueue =
+{
+    .buffer = s_spi0TxStorage,
+    .length = SPI0_TX_BUF_LEN,
+    .head   = 0U,
+    .tail   = 0U,
+};
+
 #if !DRV_SPI_USE_SYSCFG
 static void DRV_SPI_enableModuleClock(void)
 {
@@ -117,6 +136,10 @@ void DRV_SPI_init(void)
 #endif
 #if defined(mySPI0_DATAWIDTH)
     s_spiState.dataWidth = mySPI0_DATAWIDTH;
+#endif
+#if defined(mySPI0_BASE)
+    SPI_clearInterruptStatus(s_spiState.base, SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_TXFF);
+    SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
 #endif
 #else
     DRV_SPI_enableModuleClock();
@@ -224,14 +247,153 @@ void DRV_SPI_attachToDRV8316(DRV8316_Handle handle, uint32_t csGpio, uint32_t en
     DRV8316_setSPIHandle(handle, s_spiState.base);
 }
 
+uint16_t DRV_SPI0_RxReadWords(uint16_t *pBuf, uint16_t len)
+{
+    uint16_t i;
+    uint16_t head;
+    uint16_t tail;
+
+    if ((pBuf == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        head = s_spi0RxQueue.head;
+        tail = s_spi0RxQueue.tail;
+
+        if (tail == head)
+        {
+            break;
+        }
+
+        pBuf[i] = s_spi0RxQueue.buffer[tail];
+        s_spi0RxQueue.tail = DRV_SPI_nextIndex(tail, s_spi0RxQueue.length);
+    }
+
+    return i;
+}
+
+uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len)
+{
+    uint16_t head;
+    uint16_t tail;
+    uint16_t nextHead;
+    uint16_t i = 0U;
+
+    if ((pData == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        head = s_spi0TxQueue.head;
+        tail = s_spi0TxQueue.tail;
+
+        nextHead = DRV_SPI_nextIndex(head, s_spi0TxQueue.length);
+
+        if (nextHead == tail)
+        {
+            break;
+        }
+
+        s_spi0TxQueue.buffer[head] = pData[i];
+        s_spi0TxQueue.head         = nextHead;
+    }
+
+    if (i > 0U)
+    {
+        SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
+    }
+
+    return i;
+}
+
+
+void spi_send_string(const char *str)
+{
+    uint16_t i = 0;
+    uint16_t spi_tx_buf[64];
+    
+    while (str[i] != '\0' && i < (sizeof(spi_tx_buf)/sizeof(spi_tx_buf[0])))
+    {
+        spi_tx_buf[i] = (uint16_t)(str[i] & 0x00FFu);
+        i++;
+    }
+
+    // 片选（如果你是手动片选）
+    // GPIO_writePin(CS_GPIO, 0);
+
+    // 写入发送队列
+    DRV_SPI0_TxWriteWords(spi_tx_buf, i);
+
+    // 可选：清掉 RX（避免 RX 堆积）
+    uint16_t dummy[64];
+    DRV_SPI0_RxReadWords(dummy, i);
+
+}
+
 
 __interrupt void INT_mySPI0_RX_ISR(void){
 
-    
+    uint16_t data;
+    uint16_t nextHead;
+    uint16_t fifoStatus;
+
+    do
+    {
+        fifoStatus = SPI_getRxFIFOStatus(s_spiState.base);
+        if (fifoStatus != SPI_FIFO_RXEMPTY)
+        {
+            data = SPI_readDataNonBlocking(s_spiState.base);
+            nextHead = DRV_SPI_nextIndex(s_spi0RxQueue.head, s_spi0RxQueue.length);
+
+            if (nextHead != s_spi0RxQueue.tail)
+            {
+                s_spi0RxQueue.buffer[s_spi0RxQueue.head] = data;
+                s_spi0RxQueue.head = nextHead;
+            }
+        }
+    } while (fifoStatus != SPI_FIFO_RXEMPTY);
+
+    SPI_clearInterruptStatus(s_spiState.base, SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_RX_OVERRUN);
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
 }
 
 
 __interrupt void INT_mySPI0_TX_ISR(void){
 
-    
+    uint16_t head;
+    uint16_t tail;
+    uint16_t fifoStatus;
+    uint16_t data;
+
+    head = s_spi0TxQueue.head;
+    tail = s_spi0TxQueue.tail;
+
+    while (tail != head)
+    {
+        fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
+        if (fifoStatus == SPI_FIFO_TXFULL)
+        {
+            break;
+        }
+
+        data = s_spi0TxQueue.buffer[tail];
+        tail = DRV_SPI_nextIndex(tail, s_spi0TxQueue.length);
+
+        SPI_writeDataNonBlocking(s_spiState.base, data);
+    }
+
+    s_spi0TxQueue.tail = tail;
+
+    if (tail == s_spi0TxQueue.head)
+    {
+        SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
+    }
+
+    SPI_clearInterruptStatus(s_spiState.base, SPI_INT_TXFF);
+    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
 }

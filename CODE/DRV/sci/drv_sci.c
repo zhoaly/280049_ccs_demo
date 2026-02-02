@@ -108,7 +108,7 @@ void SCI_RX_Task_Func(void *pvParameters)
     uint16_t data;
     uint16_t nextHead;
     uint16_t fifoStatus;
-    xSemaphoreGive(SCI0Tx_SemaphoreHandle);//实现原子化操作
+ 
     
     fifoStatus = SCI_getRxFIFOStatus(mySCI0_BASE);
     

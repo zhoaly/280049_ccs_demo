@@ -81,7 +81,7 @@ typedef enum
 #endif
 
 #ifndef APP_PROTO_CH1_ENABLE
-#define APP_PROTO_CH1_ENABLE         (0u)
+#define APP_PROTO_CH1_ENABLE         (1u)
 #endif
 
 #ifndef APP_PROTO_CH0_DEV
@@ -89,7 +89,7 @@ typedef enum
 #endif
 
 #ifndef APP_PROTO_CH1_DEV
-#define APP_PROTO_CH1_DEV            (APP_PROTO_DEV_NONE)
+#define APP_PROTO_CH1_DEV            (APP_PROTO_DEV_SPI0)
 #endif
 
 
@@ -135,6 +135,7 @@ typedef void (*APP_PROTO_FrameHandler)(APP_PROTO_Cmd cmd,//TODO 当前未实现h
 /* 协议上下文 */
 typedef struct
 {
+    uint16_t         initialized;                     /* 是否已完成初始化（非0表示已初始化） */
     APP_PROTO_State  state;
     APP_PROTO_Cmd    cmd;                              /* 低8位有效 */
     uint16_t         len;                              /* payload长度（字节数） */
@@ -167,34 +168,142 @@ typedef struct
 /* ============================================================================
  * API
  * ========================================================================== */
+/**
+ * @brief 获取通道上下文指针（仅通道使能时有效）。
+ *
+ * @param[in] ch 通道号（APP_PROTO_CH0/APP_PROTO_CH1）。
+ *
+ * @return 通道上下文指针；若通道未使能或无效则返回 NULL。
+ */
 APP_PROTO_Ctx *APP_PROTO_GetChannelCtx(uint16_t ch);
+
+/**
+ * @brief 查询通道是否使能。
+ *
+ * @param[in] ch 通道号（APP_PROTO_CH0/APP_PROTO_CH1）。
+ *
+ * @return 1：使能；0：未使能或无效通道。
+ */
 uint16_t APP_PROTO_IsChannelEnabled(uint16_t ch);
 
+/**
+ * @brief 初始化所有通道（按 APP_PROTO_CHx_ENABLE/DEV 配置进行绑定）。
+ *
+ * @note 该函数仅完成协议上下文与 IO 绑定，不会创建任务。
+ */
+void APP_PROTO_InitAll(void);
+
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+/**
+ * @brief 初始化 Master 侧协议上下文。
+ *
+ * @param[in,out] pCtx    协议上下文指针。
+ * @param[in]     handler 完整帧回调（可为 NULL）。
+ * @param[in]     pUser   回调用户参数。
+ */
 void APP_PROTO_MasterInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
+
+/**
+ * @brief 注册 Master 侧 IO 回调（读/写）。
+ *
+ * @param[in,out] pCtx      协议上下文。
+ * @param[in]     readFn    读回调（可为 NULL）。
+ * @param[in]     pReadUser 读回调用户参数。
+ * @param[in]     writeFn   写回调（可为 NULL）。
+ * @param[in]     pWriteUser写回调用户参数。
+ */
 void APP_PROTO_MasterRegisterIO(APP_PROTO_Ctx *pCtx,
                                 APP_PROTO_ReadFn readFn,
                                 void *pReadUser,
                                 APP_PROTO_WriteFn writeFn,
                                 void *pWriteUser);
+
+/**
+ * @brief Master 轮询解析（从已注册的读回调获取数据并解析）。
+ *
+ * @param[in,out] pCtx 协议上下文。
+ */
 void APP_PROTO_MasterPoll(APP_PROTO_Ctx *pCtx);
+
+/**
+ * @brief Master 发送 WRITE 帧。
+ *
+ * @param[in] pCtx  协议上下文（需已初始化）。
+ * @param[in] pPay  payload 指针（len=0 可为 NULL）。
+ * @param[in] len   payload 长度（<= APP_PROTO_MAX_PAYLOAD）。
+ *
+ * @return 实际写入发送缓冲区的 word 数；0 表示失败。
+ */
 uint16_t APP_PROTO_MasterWrite(APP_PROTO_Ctx *pCtx,
                             const uint16_t *pPay,
                             uint16_t len);
+
+/**
+ * @brief Master 发送 READ 帧。
+ *
+ * @param[in] pCtx  协议上下文（需已初始化）。
+ * @param[in] pPay  payload 指针（len=0 可为 NULL）。
+ * @param[in] len   payload 长度（<= APP_PROTO_MAX_PAYLOAD）。
+ *
+ * @return 实际写入发送缓冲区的 word 数；0 表示失败。
+ */
 uint16_t APP_PROTO_MasterRead(APP_PROTO_Ctx *pCtx,
                             const uint16_t *pPay,
                             uint16_t len);
 #elif (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+/**
+ * @brief 初始化 Slave 侧协议上下文。
+ *
+ * @param[in,out] pCtx    协议上下文指针。
+ * @param[in]     handler 完整帧回调（可为 NULL）。
+ * @param[in]     pUser   回调用户参数。
+ */
 void APP_PROTO_SlaveInit(APP_PROTO_Ctx *pCtx, APP_PROTO_FrameHandler handler, void *pUser);
+
+/**
+ * @brief 注册 Slave 侧 IO 回调（读/写）。
+ *
+ * @param[in,out] pCtx      协议上下文。
+ * @param[in]     readFn    读回调（可为 NULL）。
+ * @param[in]     pReadUser 读回调用户参数。
+ * @param[in]     writeFn   写回调（可为 NULL）。
+ * @param[in]     pWriteUser写回调用户参数。
+ */
 void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
                             APP_PROTO_ReadFn readFn,
                             void *pReadUser,
                             APP_PROTO_WriteFn writeFn,
                             void *pWriteUser);
+
+/**
+ * @brief Slave 轮询解析（可带锁保护）。
+ *
+ * @param[in,out] pCtx 协议上下文。
+ */
 void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx);
+
+/**
+ * @brief Slave 发送 WRITE 帧。
+ *
+ * @param[in] pCtx  协议上下文（需已初始化）。
+ * @param[in] pPay  payload 指针（len=0 可为 NULL）。
+ * @param[in] len   payload 长度（<= APP_PROTO_MAX_PAYLOAD）。
+ *
+ * @return 实际写入发送缓冲区的 word 数；0 表示失败。
+ */
 uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,
                             const uint16_t *pPay,
                             uint16_t len);
+
+/**
+ * @brief Slave 发送 READ 帧。
+ *
+ * @param[in] pCtx  协议上下文（需已初始化）。
+ * @param[in] pPay  payload 指针（len=0 可为 NULL）。
+ * @param[in] len   payload 长度（<= APP_PROTO_MAX_PAYLOAD）。
+ *
+ * @return 实际写入发送缓冲区的 word 数；0 表示失败。
+ */
 uint16_t APP_PROTO_SlaveRead(APP_PROTO_Ctx *pCtx,
                             const uint16_t *pPay,
                             uint16_t len);
