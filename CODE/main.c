@@ -85,7 +85,7 @@ void main(void)
 
 
 
-void myTask0_func(void * pvParameters)
+void myTask0_func(void * pvParameters)//在此实现读取逻辑(做主机时)??
 {
     (void) pvParameters;
     const uint16_t testPayload[] = { 'T', 'E', 'S', 'T' };
@@ -105,12 +105,13 @@ void myTask0_func(void * pvParameters)
                                  testPayload,
                                  (uint16_t)(sizeof(testPayload) / sizeof(testPayload[0])));
         }
-        //等待ACK
-        // if(xSemaphoreTake(PROTO_ACKHandle, portMAX_DELAY) == pdTRUE;){
-
+        // 等待ACK
+        if(xSemaphoreTake(PROTO_ACK_CH1Handle, portMAX_DELAY) == pdTRUE){
+            //TODO:在此读取引脚点平ovo,可以先部分实现
             
-        // }
-        
+            
+        }
+        //TODO 该逻辑可以和MasterWrite封装为一个整体
         
 
 

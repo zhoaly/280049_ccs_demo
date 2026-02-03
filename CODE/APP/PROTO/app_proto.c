@@ -760,11 +760,17 @@ static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
 
         case APP_PROTO_CMD_ACK:
         {
-            if ((pPayload != (const uint16_t *)0) && (len > 0u))
-            {
-                (void)channel;
-                APP_LOGI0(TAG, "Master RX READ response\n");
+            // (void)channel;
+            //收到ACK 释放信号量
+            if (channel->id ==APP_PROTO_CH0) {
+                xSemaphoreGive(PROTO_ACK_CH1Handle);
             }
+            else if(channel->id ==APP_PROTO_CH0){
+                xSemaphoreGive(PROTO_ACK_CH1Handle);    
+            }
+
+            APP_LOGI0(TAG, "Master RX READ response\n");
+            
         } break;
 
         default:
@@ -847,13 +853,16 @@ static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
                     APP_LOGI0(TAG, "Receive WRITE CMD CH0\n");
                 }
                 else if (channel->id == APP_PROTO_CH1) {
+
+                    // //发送ACK
+                    // APP_PROTO_SlaveACK(ctx);
                     APP_LOGI0(TAG, "Receive WRITE CMD CH1\n");
                 }
                
-
+                //发送ACK
                 if (ctx != (APP_PROTO_Ctx *)0)
                 {
-                    APP_PROTO_SlaveWrite(ctx, (const uint16_t *)pPayload, len);
+                    APP_PROTO_SlaveACK(ctx);
                 }
             }
         } break;
@@ -866,6 +875,7 @@ static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
             }
 
         } break;
+        
 
         default:
         {
@@ -913,6 +923,16 @@ void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
     }
 }
 
+
+uint16_t APP_PROTO_SlaveACK(APP_PROTO_Ctx *pCtx)
+
+{
+    if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
+    {
+        return 0u;
+    }
+    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_ACK, NULL, 0);
+}
 
 
 uint16_t APP_PROTO_SlaveWrite(APP_PROTO_Ctx *pCtx,

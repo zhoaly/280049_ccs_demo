@@ -283,6 +283,16 @@ void APP_PROTO_SlaveRegisterIO(APP_PROTO_Ctx *pCtx,
 void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx);
 
 /**
+ * @brief Slave 发送 ACK 帧。
+ *
+ * @param[in] pCtx  协议上下文（需已初始化）。
+ *
+ * @return 实际写入发送缓冲区的 word 数；0 表示失败。
+ */
+
+uint16_t APP_PROTO_SlaveACK(APP_PROTO_Ctx *pCtx)
+                              
+/**
  * @brief Slave 发送 WRITE 帧。
  *
  * @param[in] pCtx  协议上下文（需已初始化）。
