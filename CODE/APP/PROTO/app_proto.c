@@ -758,6 +758,15 @@ static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
             }
         } break;
 
+        case APP_PROTO_CMD_ACK:
+        {
+            if ((pPayload != (const uint16_t *)0) && (len > 0u))
+            {
+                (void)channel;
+                APP_LOGI0(TAG, "Master RX READ response\n");
+            }
+        } break;
+
         default:
         {
             /* 其他命令暂不处理 */

@@ -98,10 +98,21 @@ void myTask0_func(void * pvParameters)
         ctx = APP_PROTO_GetChannelCtx(APP_PROTO_CH1);
         if (ctx != (APP_PROTO_Ctx *)0)
         {
-            APP_PROTO_SlaveWrite(ctx,
+            // APP_PROTO_SlaveWrite(ctx,
+            //                      testPayload,
+            //                      (uint16_t)(sizeof(testPayload) / sizeof(testPayload[0])));
+             APP_PROTO_MasterWrite(ctx,
                                  testPayload,
                                  (uint16_t)(sizeof(testPayload) / sizeof(testPayload[0])));
         }
+        //等待ACK
+        // if(xSemaphoreTake(PROTO_ACKHandle, portMAX_DELAY) == pdTRUE;){
+
+            
+        // }
+        
+        
+
 
         APP_LOGI0(TAG, "task running \n");
 
