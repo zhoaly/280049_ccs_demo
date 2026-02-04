@@ -40,6 +40,7 @@
 /* ------------------------------ 应用层头文件 ----------------------------- */
 #include "app_log.h"
 #include "app_proto.h"
+#include "app_pintest.h"
 #include "app_FOC.h"
 #include "app_FOC_OpenLoop.h"
 #include "app_FOC_CloseLoop.h"

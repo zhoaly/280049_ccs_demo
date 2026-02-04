@@ -760,16 +760,13 @@ static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
 
         case APP_PROTO_CMD_ACK:
         {
-            // (void)channel;
-            //收到ACK 释放信号量
-            if (channel->id ==APP_PROTO_CH0) {
-                xSemaphoreGive(PROTO_ACK_CH1Handle);
+            if (channel != (APP_PROTO_Channel *)0)
+            {
+                APP_PINTEST_OnProtoAck(channel->id);
             }
-            else if(channel->id ==APP_PROTO_CH0){
-                xSemaphoreGive(PROTO_ACK_CH1Handle);    
-            }
+            APP_LOGI0(TAG, "Master RX ACK\n");
+            
 
-            APP_LOGI0(TAG, "Master RX READ response\n");
             
         } break;
 
@@ -849,22 +846,14 @@ static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
         {
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
             {
-                if (channel->id == APP_PROTO_CH0) {
-                    APP_LOGI0(TAG, "Receive WRITE CMD CH0\n");
-                }
-                else if (channel->id == APP_PROTO_CH1) {
+                (void)APP_PINTEST_OnProtoWrite(channel->id, pPayload, len);
 
-                    // //发送ACK
-                    // APP_PROTO_SlaveACK(ctx);
-                    APP_LOGI0(TAG, "Receive WRITE CMD CH1\n");
-                }
-               
-                //发送ACK
                 if (ctx != (APP_PROTO_Ctx *)0)
                 {
                     APP_PROTO_SlaveACK(ctx);
                 }
             }
+
         } break;
 
         case APP_PROTO_CMD_READ:

@@ -290,7 +290,7 @@ void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx);
  * @return 实际写入发送缓冲区的 word 数；0 表示失败。
  */
 
-uint16_t APP_PROTO_SlaveACK(APP_PROTO_Ctx *pCtx)
+uint16_t APP_PROTO_SlaveACK(APP_PROTO_Ctx *pCtx);
                               
 /**
  * @brief Slave 发送 WRITE 帧。
