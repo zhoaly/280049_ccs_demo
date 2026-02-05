@@ -89,7 +89,6 @@ extern "C" {
  */
 #ifndef APP_PINTEST_GPIO_POINT_LIST
 #define APP_PINTEST_GPIO_POINT_LIST \
-    X(11u, GPIO_11_GPIO11) \
     X(12u, GPIO_12_GPIO12) \
     X(14u, GPIO_14_GPIO14) \
     X(15u, GPIO_15_GPIO15) \

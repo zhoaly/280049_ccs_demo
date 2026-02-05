@@ -385,11 +385,11 @@ uint16_t APP_PINTEST_OnProtoWrite(uint16_t channel,
  * 主机侧：按测试点列表逐点发送命令、等待 ACK、读取电平并上报。
  * 从机侧：仅保持就绪（由 PROTO 回调处理命令）。
  */
-void APP_PINTEST_Task_Func(void *pvParameters)
+void PINTEST_Task_Func(void *pvParameters)
 {
     (void)pvParameters;
 
-    APP_PINTEST_InitOnce();
+    APP_PINTEST_InitOnce(); //初始化
 
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
     APP_LOGI0(TAG, "PinTest master task start\n");
@@ -427,31 +427,36 @@ void APP_PINTEST_Task_Func(void *pvParameters)
             SemaphoreHandle_t ackSem = (APP_PINTEST_CHANNEL == APP_PROTO_CH0) ?
                                        PROTO_ACK_CH0Handle : PROTO_ACK_CH1Handle;
 
-            /* 清空可能残留的 ACK 信号，避免误判 */
+            /* 步骤1：清空可能残留的 ACK 信号，避免将旧 ACK 误认为本次响应 */
             if (ackSem != NULL)
             {
                 (void)xSemaphoreTake(ackSem, 0);
             }
 
-            payload[0] = (uint16_t)APP_PINTEST_CMD_SET_LEVEL;
-            payload[1] = (uint16_t)point->pinId;
-            payload[2] = (uint16_t)APP_PINTEST_LEVEL_HIGH;
+            /* 步骤2：组帧 payload（CMD + PIN_ID + LEVEL） */
+            payload[0] = (uint16_t)APP_PINTEST_CMD_SET_LEVEL; /* CMD：设置电平 */
+            payload[1] = (uint16_t)point->pinId;             /* PIN_ID：目标引脚编号 */
+            payload[2] = (uint16_t)APP_PINTEST_LEVEL_HIGH;   /* LEVEL：拉高 */
 
             APP_LOGI1D(TAG, "Send pin %u HIGH\n", point->pinId);
 
+            /* 步骤3：通过 PROTO 发送 WRITE 帧给从机 */
             if (APP_PROTO_SendWrite(ctx, payload, (uint16_t)APP_PINTEST_PAYLOAD_LEN) == 0u)
             {
                 APP_LOGE1D(TAG, "PinTest send fail pin %u\n", point->pinId);
                 continue;
             }
 
+            /* 步骤4：等待从机 ACK，确认命令已执行 */
             if ((ackSem != NULL) &&
                 (xSemaphoreTake(ackSem, pdMS_TO_TICKS(APP_PINTEST_ACK_TIMEOUT_MS)) == pdTRUE))
             {
+                /* 步骤5：ACK 到达后延时等待电平稳定 */
                 vTaskDelay(pdMS_TO_TICKS(APP_PINTEST_SETTLE_DELAY_MS));
 
                 if (point->type == APP_PINTEST_IO_ADC)
                 {
+                    /* 步骤6A：ADC 测点—读取模拟值并判定高电平 */
                     uint16_t adcValue = APP_PINTEST_ReadAdc(point);
                     uint16_t pass = (adcValue >= (uint16_t)APP_PINTEST_ADC_HIGH_THRESHOLD) ? 1u : 0u;
 
@@ -466,6 +471,7 @@ void APP_PINTEST_Task_Func(void *pvParameters)
                 }
                 else
                 {
+                    /* 步骤6B：GPIO 测点—直接读取数字电平 */
                     uint16_t level = (GPIO_readPin(point->pinId) != 0u) ? 1u : 0u;
                     if (level != 0u)
                     {
@@ -483,16 +489,18 @@ void APP_PINTEST_Task_Func(void *pvParameters)
             }
 
 #if (APP_PINTEST_RESET_AFTER != 0u)
-            /* 可选：拉回低电平，便于下一轮测试 */
+            /* 步骤7（可选）：拉回低电平，便于下一轮测试 */
             payload[0] = (uint16_t)APP_PINTEST_CMD_SET_LEVEL;
             payload[1] = (uint16_t)point->pinId;
             payload[2] = (uint16_t)APP_PINTEST_LEVEL_LOW;
 
             if (ackSem != NULL)
             {
+                /* 发送低电平命令前同样清理 ACK */
                 (void)xSemaphoreTake(ackSem, 0);
             }
 
+            /* 发送低电平命令并等待 ACK */
             (void)APP_PROTO_SendWrite(ctx, payload, (uint16_t)APP_PINTEST_PAYLOAD_LEN);
             if (ackSem != NULL)
             {

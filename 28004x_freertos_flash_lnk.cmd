@@ -1,4 +1,4 @@
-MEMORY
+MEMORY 
 {
 PAGE 0 :
    /* BEGIN is used for the "boot to Flash" bootloader mode   */
@@ -8,10 +8,9 @@ PAGE 0 :
 
    RAMLS0           : origin = 0x008000, length = 0x000800
    RAMLS1           : origin = 0x008800, length = 0x000800
-   RAMLS2           : origin = 0x009000, length = 0x000800
 
-   /* 合并 LS3 + LS4，用于 FreeRTOS 静态任务栈 (.freertosStaticStack) */
-   RAMLS3_4         : origin = 0x009800, length = 0x001000
+   /* 合并 LS2 + LS3 + LS4，用于 FreeRTOS 静态任务栈 (.freertosStaticStack) */
+   RAMLS2_4         : origin = 0x009000, length = 0x001800   /* 0x800*3 */
 
    RESET            : origin = 0x3FFFC0, length = 0x000002
 
@@ -52,13 +51,12 @@ PAGE 0 :
    FLASH_BANK1_SEC14 : origin = 0x09E000, length = 0x001000  /* on-chip Flash */
    FLASH_BANK1_SEC15 : origin = 0x09F000, length = 0x000FF0  /* on-chip Flash */
 
-// FLASH_BANK1_SEC15_RSVD : origin = 0x09FFF0, length = 0x000010  /* Reserve as per errata */
+/* FLASH_BANK1_SEC15_RSVD : origin = 0x09FFF0, length = 0x000010 */
 
 PAGE 1 :
 
-   BOOT_RSVD       : origin = 0x000002, length = 0x0000F1     /* Part of M0, BOOT ROM stack */
-   RAMM1           : origin = 0x000400, length = 0x0003F8     /* on-chip RAM block M1 */
-// RAMM1_RSVD      : origin = 0x0007F8, length = 0x000008     /* Reserve as per errata */
+   BOOT_RSVD       : origin = 0x000002, length = 0x0000F1
+   RAMM1           : origin = 0x000400, length = 0x0003F8
 
    RAMLS5          : origin = 0x00A800, length = 0x000800
    RAMLS6          : origin = 0x00B000, length = 0x000800
@@ -68,9 +66,7 @@ PAGE 1 :
    RAMGS1          : origin = 0x00E000, length = 0x002000
    RAMGS2          : origin = 0x010000, length = 0x002000
    RAMGS3          : origin = 0x012000, length = 0x001FF8
-// RAMGS3_RSVD     : origin = 0x013FF8, length = 0x000008     /* Reserve as per errata */
 }
-
 
 SECTIONS
 {
@@ -79,12 +75,12 @@ SECTIONS
                       PAGE = 0, ALIGN(4)
    .cinit           : > FLASH_BANK0_SEC1,     PAGE = 0, ALIGN(4)
    .switch          : > FLASH_BANK0_SEC1,     PAGE = 0, ALIGN(4)
-   .reset           : > RESET,     PAGE = 0, TYPE = DSECT /* not used, */
+   .reset           : > RESET,     PAGE = 0, TYPE = DSECT
 
    .stack           : > RAMM1,     PAGE = 1
 
-   /* FreeRTOS 静态任务栈：使用合并后的 LS3_4（0x1000 words） */
-   .freertosStaticStack  : > RAMLS3_4, PAGE = 0
+   /* FreeRTOS 静态任务栈：放到 LS2~LS4（0x1800 words），避免使用 GS2 */
+   .freertosStaticStack  : > RAMLS2_4, PAGE = 0, TYPE = NOINIT, ALIGN(8)
 
    /* FreeRTOS heap：放在 GS0/GS1 */
    .freertosHeap         : > RAMGS0 | RAMGS1 , PAGE = 1
@@ -92,8 +88,8 @@ SECTIONS
 #if defined(__TI_EABI__)
    .init_array      : > FLASH_BANK0_SEC1,       PAGE = 0, ALIGN(4)
 
-   /* 输出相关的 .bss 子段，保留在 PAGE 0，方便 printf/SCI 调试 */
-   .bss:output      : > RAMLS2,       PAGE = 0
+   /* 输出相关的 .bss 子段，保留在 PAGE 0 的 LS RAM，方便 printf/SCI 调试 */
+   .bss:output      : > RAMLS1,       PAGE = 0
    .bss:cio         : > RAMLS0,       PAGE = 0
 
    /* 其余 .bss/.data/.sysmem 放在 PAGE 1 的 LS5/6/7 */
@@ -101,7 +97,6 @@ SECTIONS
    .data     : >> RAMLS5 | RAMLS6 | RAMLS7, PAGE = 1
    .sysmem   : >  RAMLS6 | RAMLS7,          PAGE = 1
 
-   /* Initalized sections go in Flash */
    .const           : > FLASH_BANK0_SEC4,       PAGE = 0, ALIGN(4)
 #else
    .pinit           : > FLASH_BANK0_SEC1,       PAGE = 0, ALIGN(4)
@@ -135,9 +130,4 @@ SECTIONS
                       RUN_END(_RamfuncsRunEnd),
                       PAGE = 0, ALIGN(4)
 #endif
-
 }
-
-//===========================================================================
-// End of file.
-//===========================================================================
