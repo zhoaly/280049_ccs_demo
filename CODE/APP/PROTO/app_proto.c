@@ -46,7 +46,12 @@ static uint16_t APP_ProtoReadSpi0(uint16_t *pBuf, uint16_t len, void *pUser)
 static uint16_t APP_ProtoWriteSpi0(const uint16_t *pData, uint16_t len, void *pUser)
 {
     (void)pUser;
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    /* ??????????????????????? dummy ????? ACK */
+    return DRV_SPI0_BeginSession(pData, len, (uint16_t)APP_PROTO_SPI_ACK_WORDS);
+#else
     return DRV_SPI0_TxWriteWords(pData, len);
+#endif
 }
 
 static uint16_t APP_ProtoReadNone(uint16_t *pBuf, uint16_t len, void *pUser)

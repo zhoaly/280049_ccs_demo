@@ -65,6 +65,10 @@ void DRV_SPI_attachToDRV8316(DRV8316_Handle handle, uint32_t csGpio, uint32_t en
 
 uint16_t DRV_SPI0_RxReadWords(uint16_t *pBuf, uint16_t len);
 uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len);
+/* ?? SPI RX FIFO ???????????????????? */
+void DRV_SPI0_RxFlush(void);
+/* ????????? + dummy ?? + ?????? SPI ????? */
+uint16_t DRV_SPI0_BeginSession(const uint16_t *pTx, uint16_t txLen, uint16_t rxExpect);
 
 void spi_send_string(const char *str);
 

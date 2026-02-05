@@ -38,6 +38,26 @@ static DRV_SPI_RingBuffer s_spi0TxQueue =
     .tail   = 0U,
 };
 
+typedef struct
+{
+    /* ???????????1 ?? TX/RX ISR ????? + dummy + ????? */
+    uint16_t active;
+    /* ??????/???? */
+    uint16_t txRemaining;
+    /* ?????????????????? */
+    uint16_t rxIgnore;
+    /* ??????? dummy ??????? SPI ?? */
+    uint16_t dummyRemaining;
+    /* ???????????? RX ???? */
+    uint16_t rxExpect;
+    /* ??/?????? */
+    const uint16_t *txPtr;
+    /* dummy ??????????? 0xFFFF? */
+    uint16_t dummyWord;
+} DRV_SPI_Session;
+
+static volatile DRV_SPI_Session s_spi0Session = {0};
+
 #if !DRV_SPI_USE_SYSCFG
 static void DRV_SPI_enableModuleClock(void)
 {
@@ -287,6 +307,12 @@ uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len)
         return 0U;
     }
 
+    /* ????????????????????????? */
+    if (s_spi0Session.active != 0U)
+    {
+        return 0U;
+    }
+
     for (i = 0U; i < len; i++)
     {
         head = s_spi0TxQueue.head;
@@ -311,6 +337,69 @@ uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len)
     return i;
 }
 
+void DRV_SPI0_RxFlush(void)
+{
+    uint16_t dummy;
+
+    /* ??????????????????????? */
+    s_spi0RxQueue.head = s_spi0RxQueue.tail;
+
+    /* ???? RX FIFO??????????? */
+    while (SPI_getRxFIFOStatus(s_spiState.base) != SPI_FIFO_RXEMPTY)
+    {
+        dummy = SPI_readDataNonBlocking(s_spiState.base);
+        (void)dummy;
+    }
+
+    /* ?? RX ????????????? */
+    SPI_clearInterruptStatus(s_spiState.base,
+                             SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_RX_OVERRUN);
+}
+
+uint16_t DRV_SPI0_BeginSession(const uint16_t *pTx, uint16_t txLen, uint16_t rxExpect)
+{
+    /* ??????????????? */
+    if ((txLen == 0U) && (rxExpect == 0U))
+    {
+        return 0U;
+    }
+
+    /* ????? 0 ?????????? */
+    if ((pTx == NULL) && (txLen != 0U))
+    {
+        return 0U;
+    }
+
+    /* ??????????????????? */
+    if (s_spi0Session.active != 0U)
+    {
+        return 0U;
+    }
+
+    /* ????????????????? */
+    if (s_spi0TxQueue.head != s_spi0TxQueue.tail)
+    {
+        return 0U;
+    }
+
+    /* ???????? RX???????? */
+    DRV_SPI0_RxFlush();
+
+    /* ??????????????????dummy ??????? */
+    s_spi0Session.txPtr       = pTx;
+    s_spi0Session.txRemaining = txLen;
+    s_spi0Session.rxIgnore    = txLen;
+    s_spi0Session.dummyRemaining = rxExpect;
+    s_spi0Session.rxExpect    = rxExpect;
+    s_spi0Session.dummyWord   = 0xFFFFu;
+    /* ?? active?? TX/RX ISR ????????? */
+    s_spi0Session.active      = 1U;
+
+    /* ?? TX FIFO ??????? */
+    SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
+
+    return txLen;
+}
 
 void spi_send_string(const char *str)
 {
@@ -342,26 +431,62 @@ __interrupt void INT_mySPI0_RX_ISR(void){
     uint16_t nextHead;
     uint16_t fifoStatus;
 
+    /* RX ISR??? RX FIFO???????????/?? */
     do
     {
         fifoStatus = SPI_getRxFIFOStatus(s_spiState.base);
         if (fifoStatus != SPI_FIFO_RXEMPTY)
         {
             data = SPI_readDataNonBlocking(s_spiState.base);
-            nextHead = DRV_SPI_nextIndex(s_spi0RxQueue.head, s_spi0RxQueue.length);
 
-            if (nextHead != s_spi0RxQueue.tail)
+            if (s_spi0Session.active != 0U)
             {
-                s_spi0RxQueue.buffer[s_spi0RxQueue.head] = data;
-                s_spi0RxQueue.head = nextHead;
+                /* ???????????????????? */
+                if (s_spi0Session.rxIgnore > 0U)
+                {
+                    s_spi0Session.rxIgnore--;
+                }
+                else if (s_spi0Session.rxExpect > 0U)
+                {
+                    nextHead = DRV_SPI_nextIndex(s_spi0RxQueue.head, s_spi0RxQueue.length);
+                    if (nextHead != s_spi0RxQueue.tail)
+                    {
+                        s_spi0RxQueue.buffer[s_spi0RxQueue.head] = data;
+                        s_spi0RxQueue.head = nextHead;
+                    }
+                    s_spi0Session.rxExpect--;
+                }
+                else
+                {
+                    /* ??????????????? */
+                }
+            }
+            else
+            {
+                /* ?????????? */
+                nextHead = DRV_SPI_nextIndex(s_spi0RxQueue.head, s_spi0RxQueue.length);
+                if (nextHead != s_spi0RxQueue.tail)
+                {
+                    s_spi0RxQueue.buffer[s_spi0RxQueue.head] = data;
+                    s_spi0RxQueue.head = nextHead;
+                }
             }
         }
     } while (fifoStatus != SPI_FIFO_RXEMPTY);
 
+    /* ??? dummy ???????????? */
+    if ((s_spi0Session.active != 0U) &&
+        (s_spi0Session.txRemaining == 0U) &&
+        (s_spi0Session.dummyRemaining == 0U))
+    {
+        s_spi0Session.active = 0U;
+        s_spi0Session.rxExpect = 0U;
+        s_spi0Session.rxIgnore = 0U;
+    }
+
     SPI_clearInterruptStatus(s_spiState.base, SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_RX_OVERRUN);
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
 }
-
 
 __interrupt void INT_mySPI0_TX_ISR(void){
 
@@ -370,9 +495,48 @@ __interrupt void INT_mySPI0_TX_ISR(void){
     uint16_t fifoStatus;
     uint16_t data;
 
+    if (s_spi0Session.active != 0U)
+    {
+        /* ?????????????? dummy ?????? */
+        for (;;)
+        {
+            fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
+            if (fifoStatus == SPI_FIFO_TXFULL)
+            {
+                break;
+            }
+
+            if (s_spi0Session.txRemaining > 0U)
+            {
+                /* ????/??? */
+                data = *s_spi0Session.txPtr++;
+                s_spi0Session.txRemaining--;
+                SPI_writeDataNonBlocking(s_spiState.base, data);
+                continue;
+            }
+
+            if (s_spi0Session.dummyRemaining > 0U)
+            {
+                /* ?? dummy ????????????? */
+                SPI_writeDataNonBlocking(s_spiState.base, s_spi0Session.dummyWord);
+                s_spi0Session.dummyRemaining--;
+                continue;
+            }
+
+            /* ????????? TX ?? */
+            SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
+            break;
+        }
+
+        SPI_clearInterruptStatus(s_spiState.base, SPI_INT_TXFF);
+        Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
+        return;
+    }
+
     head = s_spi0TxQueue.head;
     tail = s_spi0TxQueue.tail;
 
+    /* ???????????? TX FIFO */
     while (tail != head)
     {
         fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
