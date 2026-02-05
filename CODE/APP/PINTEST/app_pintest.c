@@ -511,7 +511,7 @@ void PINTEST_Task_Func(void *pvParameters)
 
         vTaskDelay(pdMS_TO_TICKS(APP_PINTEST_PERIOD_MS));
     }
-#else
+#else //SLAVE MODE
     APP_LOGI0(TAG, "PinTest slave ready\n");
 
     for (;;)

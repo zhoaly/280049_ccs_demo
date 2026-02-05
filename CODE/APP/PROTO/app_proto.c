@@ -845,10 +845,10 @@ static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
         case APP_PROTO_CMD_WRITE:
         {
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
-            {
+            {//接收指令后 执行对应动作
                 (void)APP_PINTEST_OnProtoWrite(channel->id, pPayload, len);
 
-                if (ctx != (APP_PROTO_Ctx *)0)
+                if (ctx != (APP_PROTO_Ctx *)0)//发送ACK
                 {
                     APP_PROTO_SlaveACK(ctx);
                 }
