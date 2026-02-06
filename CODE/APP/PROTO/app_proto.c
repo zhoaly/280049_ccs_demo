@@ -25,6 +25,91 @@ static APP_PROTO_Channel s_protoChannels[APP_PROTO_CHANNEL_NUM] =
     { (uint16_t)APP_PROTO_CH1, (uint16_t)APP_PROTO_CH1_ENABLE, APP_PROTO_CH1_DEV, {0} }
 };
 
+/* SPI 就绪线 GPIO 初始化标记，避免重复配置 */
+static uint16_t s_spiReadyInitDone = 0u;
+
+static void APP_PROTO_SpiReadyInit(void)
+{
+    if (s_spiReadyInitDone != 0u)
+    {
+        return;
+    }
+    s_spiReadyInitDone = 1u;
+
+    /* 统一配置 SPI 就绪线：主机为输入，从机为输出 */
+    EALLOW;
+    GPIO_setPinConfig(APP_PROTO_SPI_READY_GPIO_PIN_CONFIG);
+    GPIO_setControllerCore(APP_PROTO_SPI_READY_GPIO, GPIO_CORE_CPU1);
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    /* 主机侧：上拉输入，等待从机拉高就绪 */
+    GPIO_setPadConfig(APP_PROTO_SPI_READY_GPIO, GPIO_PIN_TYPE_STD | GPIO_PIN_TYPE_PULLUP);
+    GPIO_setQualificationMode(APP_PROTO_SPI_READY_GPIO, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(APP_PROTO_SPI_READY_GPIO, GPIO_DIR_MODE_IN);
+#else
+    /* 从机侧：默认拉低，处理完成后拉高 */
+    GPIO_writePin(APP_PROTO_SPI_READY_GPIO, 0u);
+    GPIO_setPadConfig(APP_PROTO_SPI_READY_GPIO, GPIO_PIN_TYPE_STD);
+    GPIO_setQualificationMode(APP_PROTO_SPI_READY_GPIO, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(APP_PROTO_SPI_READY_GPIO, GPIO_DIR_MODE_OUT);
+#endif
+    EDIS;
+}
+
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+static uint16_t APP_PROTO_SpiReadyWaitLevel(uint16_t level, uint32_t timeoutMs)
+{
+    TickType_t startTick = xTaskGetTickCount();
+    TickType_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
+
+    /* 先做一次快速检测，避免不必要的延时 */
+    if ((uint16_t)GPIO_readPin(APP_PROTO_SPI_READY_GPIO) == level)
+    {
+        return 1u;
+    }
+
+    if (timeoutTicks == 0u)
+    {
+        return 0u;
+    }
+
+    /* 轮询等待指定电平出现，带超时保护 */
+    do
+    {
+        vTaskDelay(pdMS_TO_TICKS(APP_PROTO_SPI_READY_POLL_MS));
+        if ((uint16_t)GPIO_readPin(APP_PROTO_SPI_READY_GPIO) == level)
+        {
+            return 1u;
+        }
+    } while ((xTaskGetTickCount() - startTick) < timeoutTicks);
+
+    return 0u;
+}
+
+static uint16_t APP_PROTO_SpiWaitSessionIdle(uint32_t timeoutMs)
+{
+    TickType_t startTick = xTaskGetTickCount();
+    TickType_t timeoutTicks = pdMS_TO_TICKS(timeoutMs);
+
+    /* 等待 SPI 会话结束（TX/RX 已完成） */
+    while (DRV_SPI0_SessionIsActive() != 0u)
+    {
+        if (timeoutTicks == 0u)
+        {
+            return 0u;
+        }
+
+        if ((xTaskGetTickCount() - startTick) >= timeoutTicks)
+        {
+            return 0u;
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(1u));
+    }
+
+    return 1u;
+}
+#endif
+
 static uint16_t APP_ProtoReadSci0(uint16_t *pBuf, uint16_t len, void *pUser)
 {
     (void)pUser;
@@ -53,8 +138,43 @@ static uint16_t APP_ProtoWriteSpi0(const uint16_t *pData, uint16_t len, void *pU
 {
     (void)pUser;
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
-    /* 主机侧使用会话式全双工：命令发送 + dummy 时钟 + ACK 读取 */
-    return DRV_SPI0_SessionBegin(pData, len, (uint16_t)APP_PROTO_SPI_ACK_WORDS);
+    uint16_t sent;
+
+    APP_PROTO_SpiReadyInit();
+
+    /* 确保就绪线低电平，避免沿触发错误的“伪就绪” */
+    if (APP_PROTO_SpiReadyWaitLevel(0u, APP_PROTO_SPI_READY_TIMEOUT_MS) == 0u)
+    {
+        APP_LOGW0(TAG, "SPI ready stuck high before TX\n");
+        return 0u;
+    }
+
+    /* 阶段1：仅发送命令帧（不发送 dummy 时钟） */
+    sent = DRV_SPI0_SessionBegin(pData, len, 0u);
+    if (sent == 0u)
+    {
+        return 0u;
+    }
+
+    (void)APP_PROTO_SpiWaitSessionIdle(APP_PROTO_SPI_READY_TIMEOUT_MS);
+
+    /* 等待从机就绪后再补发 dummy 时钟，读出 ACK 帧 */
+    if (APP_PROTO_SpiReadyWaitLevel(1u, APP_PROTO_SPI_READY_TIMEOUT_MS) == 0u)
+    {
+        APP_LOGW0(TAG, "SPI ready timeout\n");
+        return sent;
+    }
+
+    if (DRV_SPI0_SessionBegin((const uint16_t *)0,
+                              0u,
+                              (uint16_t)APP_PROTO_SPI_ACK_WORDS) == 0u)
+    {
+        APP_LOGW0(TAG, "SPI ACK session start failed\n");
+        return sent;
+    }
+
+    (void)APP_PROTO_SpiWaitSessionIdle(APP_PROTO_SPI_READY_TIMEOUT_MS);
+    return sent;
 #else
     return DRV_SPI0_QueueWriteWords(pData, len);
 #endif
@@ -420,6 +540,9 @@ static void APP_PROTO_ChannelInitOne(APP_PROTO_Channel *ch)
 static void APP_PROTO_ChannelInitAll(void)
 {
     uint16_t i;
+
+    /* 统一初始化 SPI 就绪线（主机/从机编译时决定方向） */
+    APP_PROTO_SpiReadyInit();
 
     for (i = 0u; i < (uint16_t)APP_PROTO_CHANNEL_NUM; i++)
     {
@@ -927,11 +1050,26 @@ void APP_PROTO_SlavePoll(APP_PROTO_Ctx *pCtx)
 uint16_t APP_PROTO_SlaveACK(APP_PROTO_Ctx *pCtx)
 
 {
+    uint16_t sent;
+
     if ((pCtx == (APP_PROTO_Ctx *)0) || (pCtx->initialized == 0u))
     {
         return 0u;
     }
-    return APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_ACK, NULL, 0);
+
+    /* 先把 ACK 帧写入从机发送队列 */
+    sent = APP_PROTO_CoreSendFrame(pCtx, APP_PROTO_CMD_ACK, NULL, 0);
+    if (sent != 0u)
+    {
+        APP_PROTO_SpiReadyInit();
+        if (pCtx->writeFn == APP_ProtoWriteSpi0)
+        {
+            /* 拉高就绪线并等待主机读出 ACK（RX 计数到达后自动拉低） */
+            DRV_SPI0_ReadyLineArm((uint16_t)APP_PROTO_SPI_ACK_WORDS);
+        }
+    }
+
+    return sent;
 }
 
 

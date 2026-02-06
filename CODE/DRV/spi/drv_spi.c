@@ -79,6 +79,8 @@ typedef struct
 } DRV_SPI_Session;
 
 static volatile DRV_SPI_Session s_spi0Session = {0};
+/* 从机就绪线拉高后的“待接收字数”计数，用于自动拉低 */
+static volatile uint16_t s_spi0ReadyRxRemaining = 0U;
 
 #if !DRV_SPI_USE_SYSCFG
 static void DRV_SPI_enableModuleClock(void)
@@ -501,6 +503,22 @@ void DRV_SPI0_QueueRxFlush(void)
     DRV_SPI0_ClearRxFifo();
 }
 
+void DRV_SPI0_ReadyLineArm(uint16_t rxCount)
+{
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+    if (rxCount == 0U)
+    {
+        return;
+    }
+
+    /* 拉高就绪线，等待主机读出指定字数后自动拉低 */
+    s_spi0ReadyRxRemaining = rxCount;
+    GPIO_writePin(APP_PROTO_SPI_READY_GPIO, 1U);
+#else
+    (void)rxCount;
+#endif
+}
+
 /* ========================================================================== */
 /* 会话式全双工通信接口                                                      */
 /* ========================================================================== */
@@ -644,6 +662,18 @@ __interrupt void INT_mySPI0_RX_ISR(void){
         if (fifoStatus != SPI_FIFO_RXEMPTY)
         {
             data = SPI_readDataNonBlocking(s_spiState.base);
+
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_SLAVE)
+            /* 从机侧：统计主机读出的字数，到达后拉低就绪线 */
+            if (s_spi0ReadyRxRemaining > 0U)
+            {
+                s_spi0ReadyRxRemaining--;
+                if (s_spi0ReadyRxRemaining == 0U)
+                {
+                    GPIO_writePin(APP_PROTO_SPI_READY_GPIO, 0U);
+                }
+            }
+#endif
 
             if (s_spi0Session.active != 0U)
             {
