@@ -855,11 +855,9 @@ static uint16_t APP_PROTO_CoreSendFrame(APP_PROTO_Ctx *pCtx,
 }
 
 
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
 
-            {//接收指令后 执行对应动作
-                (void)APP_PINTEST_OnProtoWrite(channel->id, pPayload, len);
-
-                if (ctx != (APP_PROTO_Ctx *)0)//发送ACK
+/**
  * @brief Master 侧帧处理：处理从 Slave 返回的帧。
  *
  * 说明：
