@@ -15,6 +15,8 @@ const cputimer       = scripting.addModule("/driverlib/cputimer.js", {}, false);
 const cputimer1      = cputimer.addInstance();
 const cputimer2      = cputimer.addInstance();
 const device_support = scripting.addModule("/driverlib/device_support.js");
+const gpio           = scripting.addModule("/driverlib/gpio.js", {}, false);
+const gpio2          = gpio.addInstance();
 const sci            = scripting.addModule("/driverlib/sci.js", {}, false);
 const sci1           = sci.addInstance();
 const spi            = scripting.addModule("/driverlib/spi.js", {}, false);
@@ -52,6 +54,9 @@ cputimer2.startTimer                = true;
 cputimer2.timerPeriod               = 10000000;
 cputimer2.timerInt.enableInterrupt  = true;
 cputimer2.timerInt.interruptHandler = "timer0_ISR";
+
+gpio2.$name           = "SPI_SLAVE_SYS";
+gpio2.gpioPin.$assign = "GPIO5";
 
 sci1.$name                      = "mySCI0";
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
