@@ -274,7 +274,8 @@ static inline uint16_t APP_PROTO_IsCmdValid(APP_PROTO_Cmd cmd)
     uint16_t cmdByte = (uint16_t)(((uint16_t)cmd) & 0x00FFu);
 
     return (uint16_t)((cmdByte == (uint16_t)APP_PROTO_CMD_WRITE) ||
-                      (cmdByte == (uint16_t)APP_PROTO_CMD_READ));
+                      (cmdByte == (uint16_t)APP_PROTO_CMD_READ)  ||
+                      (cmdByte == (uint16_t)APP_PROTO_CMD_ACK));
 }
 
 /**
@@ -854,8 +855,6 @@ static uint16_t APP_PROTO_CoreSendFrame(APP_PROTO_Ctx *pCtx,
 }
 
 
-
-
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
 
 /**
@@ -979,10 +978,10 @@ static void PROTO_SlaveHandler(APP_PROTO_Cmd cmd,
         case APP_PROTO_CMD_WRITE:
         {
             if ((pPayload != (const uint16_t *)0) && (len > 0u))
-            {
+            {//接收指令后 执行对应动作
                 (void)APP_PINTEST_OnProtoWrite(channel->id, pPayload, len);
 
-                if (ctx != (APP_PROTO_Ctx *)0)
+                if (ctx != (APP_PROTO_Ctx *)0)//发送ACK
                 {
                     APP_PROTO_SlaveACK(ctx);
                 }

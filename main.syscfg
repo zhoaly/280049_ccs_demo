@@ -55,8 +55,10 @@ cputimer2.timerPeriod               = 10000000;
 cputimer2.timerInt.enableInterrupt  = true;
 cputimer2.timerInt.interruptHandler = "timer0_ISR";
 
-gpio2.$name           = "SPI_SLAVE_SYS";
-gpio2.gpioPin.$assign = "GPIO5";
+gpio2.$name             = "SPI_SLAVE_SYS";
+gpio2.direction         = "GPIO_DIR_MODE_OUT";
+gpio2.writeInitialValue = true;
+gpio2.gpioPin.$assign   = "GPIO5";
 
 sci1.$name                      = "mySCI0";
 sci1.selectRegisteredInterrupts = ["registerRxInt","registerTxInt"];
@@ -70,7 +72,6 @@ sci1.sciTXInt.enableInterrupt   = true;
 spi1.$name                    = "mySPI0";
 spi1.registerInterrupts       = true;
 spi1.enabledFIFOInterrupts    = ["SPI_INT_RXFF","SPI_INT_TXFF"];
-spi1.mode                     = "SPI_MODE_CONTROLLER";
 spi1.rxFifo                   = "SPI_FIFO_RX1";
 spi1.spi.$assign              = "SPIA";
 spi1.spi.spi_picoPin.$assign  = "GPIO8";

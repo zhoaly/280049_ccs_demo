@@ -592,7 +592,7 @@ uint16_t DRV_SPI0_SessionBegin(const uint16_t *pTx, uint16_t txLen, uint16_t rxE
     /* 使能 TX FIFO 中断以启动发送 */
     SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
 
-    return txLen;
+    return (uint16_t)(txLen + rxExpect);
 }
 
 uint16_t DRV_SPI0_SessionIsActive(void)
