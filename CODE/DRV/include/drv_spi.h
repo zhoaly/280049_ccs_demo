@@ -79,7 +79,9 @@ void DRV_SPI0_ReadyLineArm(uint16_t rxCount);
 /* ========================================================================== */
 /* 会话式全双工通信接口                                                       */
 /* ========================================================================== */
-/* 启动一次“命令发送 + dummy 时钟 + 响应接收”的全双工会话 */
+/* 启动一次“命令发送 + dummy 时钟 + 响应接收”的全双工会话
+ * 返回值：成功时返回计划发送/接收的总字数（txLen + rxExpect），失败返回 0。
+ */
 uint16_t DRV_SPI0_SessionBegin(const uint16_t *pTx, uint16_t txLen, uint16_t rxExpect);
 /* 读取会话式响应数据 */
 uint16_t DRV_SPI0_SessionReadWords(uint16_t *pBuf, uint16_t len);

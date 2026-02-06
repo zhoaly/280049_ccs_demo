@@ -74,6 +74,18 @@ static uint16_t s_pinTestInitDone = 0u;
 static uint16_t s_adcInitMask = 0u;
 
 /**
+ * @brief 判断 pinId 是否为可配置模拟模式的引脚（AIO/22/23）。
+ */
+static uint16_t APP_PINTEST_IsAnalogPin(uint16_t pinId)
+{
+    if (((pinId >= 224u) && (pinId <= 247u)) || (pinId == 22u) || (pinId == 23u))
+    {
+        return 1u;
+    }
+    return 0u;
+}
+
+/**
  * @brief 根据 pinId 查找测试点。
  * @return 找到返回指针，否则返回 NULL。
  */
@@ -250,7 +262,10 @@ static void APP_PINTEST_InitOnce(void)
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
         if (point->type == APP_PINTEST_IO_ADC)
         {
-            GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_ENABLED);
+            if (APP_PINTEST_IsAnalogPin(point->pinId) != 0u)
+            {
+                GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_ENABLED);
+            }
             GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_IN);
         }
         else
@@ -259,13 +274,19 @@ static void APP_PINTEST_InitOnce(void)
 #if (APP_PINTEST_INPUT_PULLUP != 0u)
             padConfig |= GPIO_PIN_TYPE_PULLUP;
 #endif
-            GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+            if (APP_PINTEST_IsAnalogPin(point->pinId) != 0u)
+            {
+                GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+            }
             GPIO_setPadConfig(point->pinId, padConfig);
             GPIO_setQualificationMode(point->pinId, GPIO_QUAL_SYNC);
             GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_IN);
         }
 #else
-        GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+        if (APP_PINTEST_IsAnalogPin(point->pinId) != 0u)
+        {
+            GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+        }
         GPIO_setPadConfig(point->pinId, GPIO_PIN_TYPE_STD);
         GPIO_setQualificationMode(point->pinId, GPIO_QUAL_SYNC);
         GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_OUT);
@@ -511,7 +532,7 @@ void PINTEST_Task_Func(void *pvParameters)
 
         vTaskDelay(pdMS_TO_TICKS(APP_PINTEST_PERIOD_MS));
     }
-#else //SLAVE MODE
+#else
     APP_LOGI0(TAG, "PinTest slave ready\n");
 
     for (;;)

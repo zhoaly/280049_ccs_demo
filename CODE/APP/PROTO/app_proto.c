@@ -274,7 +274,8 @@ static inline uint16_t APP_PROTO_IsCmdValid(APP_PROTO_Cmd cmd)
     uint16_t cmdByte = (uint16_t)(((uint16_t)cmd) & 0x00FFu);
 
     return (uint16_t)((cmdByte == (uint16_t)APP_PROTO_CMD_WRITE) ||
-                      (cmdByte == (uint16_t)APP_PROTO_CMD_READ));
+                      (cmdByte == (uint16_t)APP_PROTO_CMD_READ)  ||
+                      (cmdByte == (uint16_t)APP_PROTO_CMD_ACK));
 }
 
 /**
@@ -855,10 +856,10 @@ static uint16_t APP_PROTO_CoreSendFrame(APP_PROTO_Ctx *pCtx,
 
 
 
+            {//接收指令后 执行对应动作
+                (void)APP_PINTEST_OnProtoWrite(channel->id, pPayload, len);
 
-#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
-
-/**
+                if (ctx != (APP_PROTO_Ctx *)0)//发送ACK
  * @brief Master 侧帧处理：处理从 Slave 返回的帧。
  *
  * 说明：
