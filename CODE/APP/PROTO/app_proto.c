@@ -314,9 +314,18 @@ static void APP_PROTO_OnError(APP_PROTO_Ctx *pCtx, APP_PROTO_Error err, uint16_t
 
     switch (err)
     {
-        case APP_PROTO_ERR_CMD: pCtx->cntErrCmd++; break;
-        case APP_PROTO_ERR_LEN: pCtx->cntErrLen++; break;
-        case APP_PROTO_ERR_EOF: pCtx->cntErrEof++; break;
+        case APP_PROTO_ERR_CMD: 
+            pCtx->cntErrCmd++; 
+            APP_LOGE0(TAG, "ERR CMD\n");
+            break;
+        case APP_PROTO_ERR_LEN: 
+            pCtx->cntErrLen++; 
+            APP_LOGE0(TAG, "ERR LEN\n");
+            break;
+        case APP_PROTO_ERR_EOF: 
+            pCtx->cntErrEof++;
+            APP_LOGE0(TAG, "ERR EOF\n");
+             break;
         default: break;
     }
 
@@ -906,6 +915,7 @@ static void PROTO_MasterHandler(APP_PROTO_Cmd cmd,
         default:
         {
             /* 其他命令暂不处理 */
+            APP_LOGI0(TAG, "Master RX NONE\n");
         } break;
     }
 }
