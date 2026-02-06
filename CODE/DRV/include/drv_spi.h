@@ -73,6 +73,8 @@ uint16_t DRV_SPI0_QueueReadWords(uint16_t *pBuf, uint16_t len);
 uint16_t DRV_SPI0_QueueWriteWords(const uint16_t *pData, uint16_t len);
 /* 清空普通 RX 队列与硬件 FIFO */
 void DRV_SPI0_QueueRxFlush(void);
+/* 就绪线控制：从机拉高就绪线，并在接收 rxCount 个字后自动拉低（主机侧调用无效） */
+void DRV_SPI0_ReadyLineArm(uint16_t rxCount);
 
 /* ========================================================================== */
 /* 会话式全双工通信接口                                                       */

@@ -45,6 +45,22 @@ typedef enum
 #ifndef APP_PROTO_SPI_ACK_WORDS
 #define APP_PROTO_SPI_ACK_WORDS      (4u)
 #endif
+/* SPI 从机就绪线 GPIO：主机读“就绪=高”后再补发 dummy 读取 ACK */
+#ifndef APP_PROTO_SPI_READY_GPIO
+#define APP_PROTO_SPI_READY_GPIO     SPI_SLAVE_SYS
+#endif
+#ifndef APP_PROTO_SPI_READY_GPIO_PIN_CONFIG
+/* SysCfg 生成的 pinmux 配置宏 */
+#define APP_PROTO_SPI_READY_GPIO_PIN_CONFIG SPI_SLAVE_SYS_GPIO_PIN_CONFIG
+#endif
+/* 主机等待就绪线的超时时间（ms），需覆盖从机最长处理耗时 */
+#ifndef APP_PROTO_SPI_READY_TIMEOUT_MS
+#define APP_PROTO_SPI_READY_TIMEOUT_MS  20u
+#endif
+/* 主机轮询就绪线的间隔（ms），过小会增加 CPU 占用 */
+#ifndef APP_PROTO_SPI_READY_POLL_MS
+#define APP_PROTO_SPI_READY_POLL_MS     1u
+#endif
 
 /* 每次 Poll 从环形缓冲区读取的字数（uint16_t数组元素个数，低8位有效） */
 #ifndef APP_PROTO_POLL_READ_CHUNK
