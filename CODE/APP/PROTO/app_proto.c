@@ -40,17 +40,23 @@ static uint16_t APP_ProtoWriteSci0(const uint16_t *pData, uint16_t len, void *pU
 static uint16_t APP_ProtoReadSpi0(uint16_t *pBuf, uint16_t len, void *pUser)
 {
     (void)pUser;
-    return DRV_SPI0_RxReadWords(pBuf, len);
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    /* 主机侧读取会话式响应缓存（ACK 等数据） */
+    return DRV_SPI0_SessionReadWords(pBuf, len);
+#else
+    /* 从机侧读取普通队列缓存 */
+    return DRV_SPI0_QueueReadWords(pBuf, len);
+#endif
 }
 
 static uint16_t APP_ProtoWriteSpi0(const uint16_t *pData, uint16_t len, void *pUser)
 {
     (void)pUser;
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
-    /* ??????????????????????? dummy ????? ACK */
-    return DRV_SPI0_BeginSession(pData, len, (uint16_t)APP_PROTO_SPI_ACK_WORDS);
+    /* 主机侧使用会话式全双工：命令发送 + dummy 时钟 + ACK 读取 */
+    return DRV_SPI0_SessionBegin(pData, len, (uint16_t)APP_PROTO_SPI_ACK_WORDS);
 #else
-    return DRV_SPI0_TxWriteWords(pData, len);
+    return DRV_SPI0_QueueWriteWords(pData, len);
 #endif
 }
 

@@ -41,7 +41,7 @@ typedef enum
 #ifndef APP_PROTO_MAX_PAYLOAD
 #define APP_PROTO_MAX_PAYLOAD        (64u)
 #endif
-/* SPI ??????????????????? dummy ????? ACK ??? */
+/* SPI 主机发送后期望从机返回的字数（用于 dummy 时钟补发与 ACK 读取） */
 #ifndef APP_PROTO_SPI_ACK_WORDS
 #define APP_PROTO_SPI_ACK_WORDS      (4u)
 #endif
