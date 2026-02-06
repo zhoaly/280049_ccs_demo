@@ -43,7 +43,7 @@ typedef enum
 #endif
 /* SPI 主机发送后期望从机返回的字数（用于 dummy 时钟补发与 ACK 读取） */
 #ifndef APP_PROTO_SPI_ACK_WORDS
-#define APP_PROTO_SPI_ACK_WORDS      (4u)
+#define APP_PROTO_SPI_ACK_WORDS      (8u)
 #endif
 /* SPI 从机就绪线 GPIO：主机读“就绪=高”后再补发 dummy 读取 ACK */
 #ifndef APP_PROTO_SPI_READY_GPIO

@@ -316,22 +316,25 @@ static void APP_PROTO_OnError(APP_PROTO_Ctx *pCtx, APP_PROTO_Error err, uint16_t
     {
         case APP_PROTO_ERR_CMD: 
             pCtx->cntErrCmd++; 
-            APP_LOGE0(TAG, "ERR CMD\n");
+            // APP_LOGE0(TAG, "ERR CMD\n");
             break;
         case APP_PROTO_ERR_LEN: 
             pCtx->cntErrLen++; 
-            APP_LOGE0(TAG, "ERR LEN\n");
+            // APP_LOGE0(TAG, "ERR LEN\n");
             break;
         case APP_PROTO_ERR_EOF: 
             pCtx->cntErrEof++;
-            APP_LOGE0(TAG, "ERR EOF\n");
+            // APP_LOGE0(TAG, "ERR EOF\n");
              break;
         default: break;
     }
 
+    APP_LOGE2D(TAG, "Proto parse err %u, byte 0x%02X\n", err, (uint16_t)(curByte & 0x00FFu));
+
     /* 重同步加速：若当前字节就是 SOF，则直接进入 WAIT_CMD（把它当作新帧头） */
     if ( (uint16_t)(curByte & 0x00FFu) == (uint16_t)(APP_PROTO_SOF & 0x00FFu) )
     {
+        APP_LOGE0(TAG, "RSTSTART\n");
         pCtx->state = APP_PROTO_ST_WAIT_CMD;
         pCtx->cmd   = (APP_PROTO_Cmd)0u;
         pCtx->len   = 0u;
@@ -340,6 +343,7 @@ static void APP_PROTO_OnError(APP_PROTO_Ctx *pCtx, APP_PROTO_Error err, uint16_t
     else
     {
         APP_PROTO_Reset(pCtx);
+        APP_LOGE0(TAG, "RST\n");
     }
 }
 
