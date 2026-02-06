@@ -19,24 +19,66 @@ static DRV_SPI_State s_spiState =
     .initialized = false
 };
 
-static volatile uint16_t s_spi0RxStorage[SPI0_RX_BUF_LEN];
-static volatile uint16_t s_spi0TxStorage[SPI0_TX_BUF_LEN];
+/* ========================================================================== */
+/* 队列异步通信：使用环形缓冲实现 TX/RX 解耦                                   */
+/* ========================================================================== */
+static volatile uint16_t s_spi0QueueRxStorage[SPI0_RX_BUF_LEN];
+static volatile uint16_t s_spi0QueueTxStorage[SPI0_TX_BUF_LEN];
 
-static DRV_SPI_RingBuffer s_spi0RxQueue =
+static DRV_SPI_RingBuffer s_spi0QueueRx =
 {
-    .buffer = s_spi0RxStorage,
+    .buffer = s_spi0QueueRxStorage,
     .length = SPI0_RX_BUF_LEN,
     .head   = 0U,
     .tail   = 0U,
 };
 
-static DRV_SPI_RingBuffer s_spi0TxQueue =
+static DRV_SPI_RingBuffer s_spi0QueueTx =
 {
-    .buffer = s_spi0TxStorage,
+    .buffer = s_spi0QueueTxStorage,
     .length = SPI0_TX_BUF_LEN,
     .head   = 0U,
     .tail   = 0U,
 };
+
+/* ========================================================================== */
+/* 会话式全双工通信：命令 + dummy 时钟 + 响应                                  */
+/* ========================================================================== */
+static volatile uint16_t s_spi0SessionRxStorage[SPI0_SESSION_RX_BUF_LEN];
+
+static DRV_SPI_RingBuffer s_spi0SessionRx =
+{
+    .buffer = s_spi0SessionRxStorage,
+    .length = SPI0_SESSION_RX_BUF_LEN,
+    .head   = 0U,
+    .tail   = 0U,
+};
+
+/* 会话式全双工流程说明：
+ * 1) TX ISR 先发送命令字；
+ * 2) TX ISR 再发送 dummy 字以维持 SCLK；
+ * 3) RX ISR 丢弃命令回波；
+ * 4) RX ISR 采集期望响应并写入会话 RX 缓冲。
+ */
+typedef struct
+{
+    /* 会话激活标志：1 表示进入会话式 TX/RX 处理流程 */
+    uint16_t active;
+    /* 待发送命令/数据字数 */
+    uint16_t txRemaining;
+    /* 需要丢弃的回波字数（等于命令长度） */
+    uint16_t rxIgnore;
+    /* 需要继续发送的 dummy 字数，用于维持 SPI 时钟 */
+    uint16_t dummyRemaining;
+    /* 期望接收的响应字数，写入会话 RX 缓冲 */
+    uint16_t rxExpect;
+    /* 命令/数据发送指针 */
+    const uint16_t *txPtr;
+    /* dummy 填充值（典型为 0xFFFF） */
+    uint16_t dummyWord;
+} DRV_SPI_Session;
+
+static volatile DRV_SPI_Session s_spi0Session = {0};
 
 #if !DRV_SPI_USE_SYSCFG
 static void DRV_SPI_enableModuleClock(void)
@@ -247,7 +289,222 @@ void DRV_SPI_attachToDRV8316(DRV8316_Handle handle, uint32_t csGpio, uint32_t en
     DRV8316_setSPIHandle(handle, s_spiState.base);
 }
 
-uint16_t DRV_SPI0_RxReadWords(uint16_t *pBuf, uint16_t len)
+/* ========================================================================== */
+/* 内部辅助函数                                                              */
+/* ========================================================================== */
+static void DRV_SPI0_ClearRxFifo(void)
+{
+    uint16_t dummy;
+
+    while (SPI_getRxFIFOStatus(s_spiState.base) != SPI_FIFO_RXEMPTY)
+    {
+        dummy = SPI_readDataNonBlocking(s_spiState.base);
+        (void)dummy;
+    }
+
+    SPI_clearInterruptStatus(s_spiState.base,
+                             SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_RX_OVERRUN);
+}
+
+static void DRV_SPI0_RxHandleQueue(uint16_t data)
+{
+    uint16_t nextHead;
+
+    nextHead = DRV_SPI_nextIndex(s_spi0QueueRx.head, s_spi0QueueRx.length);
+    if (nextHead != s_spi0QueueRx.tail)
+    {
+        s_spi0QueueRx.buffer[s_spi0QueueRx.head] = data;
+        s_spi0QueueRx.head = nextHead;
+    }
+}
+
+static void DRV_SPI0_RxHandleSession(uint16_t data)
+{
+    uint16_t nextHead;
+
+    /* 先丢弃命令回波，再接收响应数据 */
+    if (s_spi0Session.rxIgnore > 0U)
+    {
+        s_spi0Session.rxIgnore--;
+        return;
+    }
+
+    if (s_spi0Session.rxExpect > 0U)
+    {
+        nextHead = DRV_SPI_nextIndex(s_spi0SessionRx.head, s_spi0SessionRx.length);
+        if (nextHead != s_spi0SessionRx.tail)
+        {
+            s_spi0SessionRx.buffer[s_spi0SessionRx.head] = data;
+            s_spi0SessionRx.head = nextHead;
+        }
+        s_spi0Session.rxExpect--;
+    }
+    else
+    {
+        /* 超出期望长度的多余数据直接丢弃 */
+    }
+}
+
+static void DRV_SPI0_TxHandleSession(void)
+{
+    uint16_t fifoStatus;
+    uint16_t data;
+
+    for (;;)
+    {
+        fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
+        if (fifoStatus == SPI_FIFO_TXFULL)
+        {
+            break;
+        }
+
+        if (s_spi0Session.txRemaining > 0U)
+        {
+            /* 发送命令/数据字，同时产生回波 */
+            data = *s_spi0Session.txPtr++;
+            s_spi0Session.txRemaining--;
+            SPI_writeDataNonBlocking(s_spiState.base, data);
+            continue;
+        }
+
+        if (s_spi0Session.dummyRemaining > 0U)
+        {
+            /* 发送 dummy 字以维持时钟，驱动从机回传 */
+            SPI_writeDataNonBlocking(s_spiState.base, s_spi0Session.dummyWord);
+            s_spi0Session.dummyRemaining--;
+            continue;
+        }
+
+        /* 会话发送完成，关闭 TX 中断 */
+        SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
+        break;
+    }
+}
+
+static void DRV_SPI0_TxHandleQueue(void)
+{
+    uint16_t head = s_spi0QueueTx.head;
+    uint16_t tail = s_spi0QueueTx.tail;
+    uint16_t fifoStatus;
+    uint16_t data;
+
+    while (tail != head)
+    {
+        fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
+        if (fifoStatus == SPI_FIFO_TXFULL)
+        {
+            break;
+        }
+
+        data = s_spi0QueueTx.buffer[tail];
+        tail = DRV_SPI_nextIndex(tail, s_spi0QueueTx.length);
+
+        SPI_writeDataNonBlocking(s_spiState.base, data);
+    }
+
+    s_spi0QueueTx.tail = tail;
+
+    if (tail == s_spi0QueueTx.head)
+    {
+        SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
+    }
+}
+
+/* ========================================================================== */
+/* 队列异步通信接口                                                          */
+/* ========================================================================== */
+uint16_t DRV_SPI0_QueueReadWords(uint16_t *pBuf, uint16_t len)
+{
+    uint16_t i;
+    uint16_t head;
+    uint16_t tail;
+
+    if ((pBuf == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    /* 会话进行中时不允许读取普通队列 */
+    if (s_spi0Session.active != 0U)
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        head = s_spi0QueueRx.head;
+        tail = s_spi0QueueRx.tail;
+
+        if (tail == head)
+        {
+            break;
+        }
+
+        pBuf[i] = s_spi0QueueRx.buffer[tail];
+        s_spi0QueueRx.tail = DRV_SPI_nextIndex(tail, s_spi0QueueRx.length);
+    }
+
+    return i;
+}
+
+uint16_t DRV_SPI0_QueueWriteWords(const uint16_t *pData, uint16_t len)
+{
+    uint16_t head;
+    uint16_t tail;
+    uint16_t nextHead;
+    uint16_t i = 0U;
+
+    if ((pData == NULL) || (len == 0U))
+    {
+        return 0U;
+    }
+
+    /* 会话进行中时禁止向普通 TX 队列写入 */
+    if (s_spi0Session.active != 0U)
+    {
+        return 0U;
+    }
+
+    for (i = 0U; i < len; i++)
+    {
+        head = s_spi0QueueTx.head;
+        tail = s_spi0QueueTx.tail;
+
+        nextHead = DRV_SPI_nextIndex(head, s_spi0QueueTx.length);
+
+        if (nextHead == tail)
+        {
+            break;
+        }
+
+        s_spi0QueueTx.buffer[head] = pData[i];
+        s_spi0QueueTx.head         = nextHead;
+    }
+
+    if (i > 0U)
+    {
+        SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
+    }
+
+    return i;
+}
+
+void DRV_SPI0_QueueRxFlush(void)
+{
+    /* 会话进行中时不允许清空普通 RX 队列 */
+    if (s_spi0Session.active != 0U)
+    {
+        return;
+    }
+
+    s_spi0QueueRx.head = s_spi0QueueRx.tail;
+    DRV_SPI0_ClearRxFifo();
+}
+
+/* ========================================================================== */
+/* 会话式全双工通信接口                                                      */
+/* ========================================================================== */
+uint16_t DRV_SPI0_SessionReadWords(uint16_t *pBuf, uint16_t len)
 {
     uint16_t i;
     uint16_t head;
@@ -260,139 +517,172 @@ uint16_t DRV_SPI0_RxReadWords(uint16_t *pBuf, uint16_t len)
 
     for (i = 0U; i < len; i++)
     {
-        head = s_spi0RxQueue.head;
-        tail = s_spi0RxQueue.tail;
+        head = s_spi0SessionRx.head;
+        tail = s_spi0SessionRx.tail;
 
         if (tail == head)
         {
             break;
         }
 
-        pBuf[i] = s_spi0RxQueue.buffer[tail];
-        s_spi0RxQueue.tail = DRV_SPI_nextIndex(tail, s_spi0RxQueue.length);
+        pBuf[i] = s_spi0SessionRx.buffer[tail];
+        s_spi0SessionRx.tail = DRV_SPI_nextIndex(tail, s_spi0SessionRx.length);
     }
 
     return i;
 }
 
-uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len)
+uint16_t DRV_SPI0_SessionBegin(const uint16_t *pTx, uint16_t txLen, uint16_t rxExpect)
 {
-    uint16_t head;
-    uint16_t tail;
-    uint16_t nextHead;
-    uint16_t i = 0U;
-
-    if ((pData == NULL) || (len == 0U))
+    /* 参数检查：至少要发送或接收 */
+    if ((txLen == 0U) && (rxExpect == 0U))
     {
         return 0U;
     }
 
-    for (i = 0U; i < len; i++)
+    /* txLen 非 0 时，发送指针必须有效 */
+    if ((pTx == NULL) && (txLen != 0U))
     {
-        head = s_spi0TxQueue.head;
-        tail = s_spi0TxQueue.tail;
-
-        nextHead = DRV_SPI_nextIndex(head, s_spi0TxQueue.length);
-
-        if (nextHead == tail)
-        {
-            break;
-        }
-
-        s_spi0TxQueue.buffer[head] = pData[i];
-        s_spi0TxQueue.head         = nextHead;
+        return 0U;
     }
 
-    if (i > 0U)
+    /* 会话互斥：一次仅允许一个会话 */
+    if (s_spi0Session.active != 0U)
     {
-        SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
+        return 0U;
     }
 
-    return i;
+    /* 确保普通 TX 队列为空，避免混用 */
+    if (s_spi0QueueTx.head != s_spi0QueueTx.tail)
+    {
+        return 0U;
+    }
+
+    /* 清空会话 RX 缓冲并刷新硬件 FIFO */
+    s_spi0SessionRx.head = s_spi0SessionRx.tail;
+    DRV_SPI0_ClearRxFifo();
+
+    /* 初始化会话状态 */
+    s_spi0Session.txPtr          = pTx;
+    s_spi0Session.txRemaining    = txLen;
+    s_spi0Session.rxIgnore       = txLen;
+    s_spi0Session.dummyRemaining = rxExpect;
+    s_spi0Session.rxExpect       = rxExpect;
+    s_spi0Session.dummyWord      = 0xFFFFu;
+    s_spi0Session.active         = 1U;
+
+    /* 使能 TX FIFO 中断以启动发送 */
+    SPI_enableInterrupt(s_spiState.base, SPI_INT_TXFF);
+
+    return txLen;
 }
 
+uint16_t DRV_SPI0_SessionIsActive(void)
+{
+    return s_spi0Session.active;
+}
 
+/* ========================================================================== */
+/* 兼容旧接口（内部调用新接口）                                              */
+/* ========================================================================== */
+uint16_t DRV_SPI0_RxReadWords(uint16_t *pBuf, uint16_t len)
+{
+    return DRV_SPI0_QueueReadWords(pBuf, len);
+}
+
+uint16_t DRV_SPI0_TxWriteWords(const uint16_t *pData, uint16_t len)
+{
+    return DRV_SPI0_QueueWriteWords(pData, len);
+}
+
+void DRV_SPI0_RxFlush(void)
+{
+    DRV_SPI0_QueueRxFlush();
+}
+
+uint16_t DRV_SPI0_BeginSession(const uint16_t *pTx, uint16_t txLen, uint16_t rxExpect)
+{
+    return DRV_SPI0_SessionBegin(pTx, txLen, rxExpect);
+}
+
+/* ========================================================================== */
+/* 调试/辅助接口                                                             */
+/* ========================================================================== */
 void spi_send_string(const char *str)
 {
     uint16_t i = 0;
     uint16_t spi_tx_buf[64];
-    
-    while (str[i] != '\0' && i < (sizeof(spi_tx_buf)/sizeof(spi_tx_buf[0])))
+
+    while (str[i] != '\0' && i < (sizeof(spi_tx_buf) / sizeof(spi_tx_buf[0])))
     {
         spi_tx_buf[i] = (uint16_t)(str[i] & 0x00FFu);
         i++;
     }
 
-    // 片选（如果你是手动片选）
-    // GPIO_writePin(CS_GPIO, 0);
+    /* 通过普通队列发送字符串 */
+    DRV_SPI0_QueueWriteWords(spi_tx_buf, i);
 
-    // 写入发送队列
-    DRV_SPI0_TxWriteWords(spi_tx_buf, i);
-
-    // 可选：清掉 RX（避免 RX 堆积）
-    uint16_t dummy[64];
-    DRV_SPI0_RxReadWords(dummy, i);
-
+    /* 可选：读取并丢弃回波数据 */
+    {
+        uint16_t dummy[64];
+        DRV_SPI0_QueueReadWords(dummy, i);
+    }
 }
 
-
+/* ========================================================================== */
+/* SPI 中断服务函数                                                          */
+/* ========================================================================== */
 __interrupt void INT_mySPI0_RX_ISR(void){
 
     uint16_t data;
-    uint16_t nextHead;
     uint16_t fifoStatus;
 
+    /* 读取 RX FIFO，并根据模式分发到会话或队列 */
     do
     {
         fifoStatus = SPI_getRxFIFOStatus(s_spiState.base);
         if (fifoStatus != SPI_FIFO_RXEMPTY)
         {
             data = SPI_readDataNonBlocking(s_spiState.base);
-            nextHead = DRV_SPI_nextIndex(s_spi0RxQueue.head, s_spi0RxQueue.length);
 
-            if (nextHead != s_spi0RxQueue.tail)
+            if (s_spi0Session.active != 0U)
             {
-                s_spi0RxQueue.buffer[s_spi0RxQueue.head] = data;
-                s_spi0RxQueue.head = nextHead;
+                DRV_SPI0_RxHandleSession(data);
+            }
+            else
+            {
+                DRV_SPI0_RxHandleQueue(data);
             }
         }
     } while (fifoStatus != SPI_FIFO_RXEMPTY);
+
+    /* 命令与 dummy 发送完成后结束会话 */
+    if ((s_spi0Session.active != 0U) &&
+        (s_spi0Session.txRemaining == 0U) &&
+        (s_spi0Session.dummyRemaining == 0U))
+    {
+        s_spi0Session.active   = 0U;
+        s_spi0Session.rxExpect = 0U;
+        s_spi0Session.rxIgnore = 0U;
+        s_spi0Session.txPtr    = (const uint16_t *)0;
+    }
 
     SPI_clearInterruptStatus(s_spiState.base, SPI_INT_RXFF | SPI_INT_RXFF_OVERFLOW | SPI_INT_RX_OVERRUN);
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
 }
 
-
 __interrupt void INT_mySPI0_TX_ISR(void){
 
-    uint16_t head;
-    uint16_t tail;
-    uint16_t fifoStatus;
-    uint16_t data;
-
-    head = s_spi0TxQueue.head;
-    tail = s_spi0TxQueue.tail;
-
-    while (tail != head)
+    /* 会话模式优先，否则走普通队列 */
+    if (s_spi0Session.active != 0U)
     {
-        fifoStatus = SPI_getTxFIFOStatus(s_spiState.base);
-        if (fifoStatus == SPI_FIFO_TXFULL)
-        {
-            break;
-        }
-
-        data = s_spi0TxQueue.buffer[tail];
-        tail = DRV_SPI_nextIndex(tail, s_spi0TxQueue.length);
-
-        SPI_writeDataNonBlocking(s_spiState.base, data);
+        DRV_SPI0_TxHandleSession();
+        SPI_clearInterruptStatus(s_spiState.base, SPI_INT_TXFF);
+        Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
+        return;
     }
 
-    s_spi0TxQueue.tail = tail;
-
-    if (tail == s_spi0TxQueue.head)
-    {
-        SPI_disableInterrupt(s_spiState.base, SPI_INT_TXFF);
-    }
+    DRV_SPI0_TxHandleQueue();
 
     SPI_clearInterruptStatus(s_spiState.base, SPI_INT_TXFF);
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP6);
