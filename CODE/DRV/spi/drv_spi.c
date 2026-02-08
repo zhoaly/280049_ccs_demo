@@ -9,6 +9,9 @@
 #define DRV_SPI_DEFAULT_BITRATE_HZ      (1000000UL)        /**< 默认 SPI 波特率 1 MHz，兼顾 DRV8316 的时序要求与 EMC。 */
 #define DRV_SPI_DEFAULT_DATA_WIDTH      (16U)              /**< DRV8316 寄存器宽度为 16 bit，对齐读写操作。 */
 
+
+static const char * TAG ="SPI";
+
 static DRV_SPI_State s_spiState =
 {
     .base        = DRV_SPI_DEFAULT_BASE,
@@ -337,6 +340,10 @@ static void DRV_SPI0_RxHandleSession(uint16_t data)
         if (nextHead != s_spi0SessionRx.tail)
         {
             s_spi0SessionRx.buffer[s_spi0SessionRx.head] = data;
+
+
+            //TODO: 测试接口
+            APP_LOGI1D(TAG, "Receive data: 0x%02X", (uint16_t)(data & 0x00FFu));
             s_spi0SessionRx.head = nextHead;
         }
         s_spi0Session.rxExpect--;

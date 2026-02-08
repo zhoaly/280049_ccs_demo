@@ -332,7 +332,8 @@ static void APP_PROTO_OnError(APP_PROTO_Ctx *pCtx, APP_PROTO_Error err, uint16_t
     APP_LOGE2D(TAG, "Proto parse err %u, byte 0x%02X\n", err, (uint16_t)(curByte & 0x00FFu));
 
     /* 重同步加速：若当前字节就是 SOF，则直接进入 WAIT_CMD（把它当作新帧头） */
-    if ( (uint16_t)(curByte & 0x00FFu) == (uint16_t)(APP_PROTO_SOF & 0x00FFu) )
+    // if ( (uint16_t)(curByte & 0x00FFu) == (uint16_t)(APP_PROTO_SOF & 0x00FFu) )
+    if(0)
     {
         APP_LOGE0(TAG, "RSTSTART\n");
         pCtx->state = APP_PROTO_ST_WAIT_CMD;
@@ -437,7 +438,7 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 
             /* 完整帧成功 调用hand */
             pCtx->cntOkFrames++;
-            
+            APP_LOGI0(TAG, "SUCCESS\n");
             if (pCtx->handler != (APP_PROTO_FrameHandler)0)
             {
                 
