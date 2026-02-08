@@ -115,7 +115,7 @@ void myTask0_func(void * pvParameters)//在此实现读取逻辑(做主机时)??
         
 
 
-        APP_LOGI0(TAG, "task running \n");
+        // APP_LOGI0(TAG, "task running \n");
 
         GPIO_togglePin(myLED2_GPIO); // RTOS heartbeat
 

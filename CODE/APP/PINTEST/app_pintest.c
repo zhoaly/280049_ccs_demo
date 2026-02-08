@@ -389,7 +389,8 @@ uint16_t APP_PINTEST_OnProtoWrite(uint16_t channel,
 
     uint16_t gpioLevel = (level != 0u) ? 1u : 0u;
     GPIO_writePin(point->pinId, gpioLevel);
-    APP_LOGI2D(TAG, "Slave set pin %u level %u\n", point->pinId, gpioLevel);
+    //TODO:debug
+    // APP_LOGI2D(TAG, "Slave set pin %u level %u\n", point->pinId, gpioLevel);
 
     return 1u;
 #else
