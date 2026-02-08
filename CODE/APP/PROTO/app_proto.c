@@ -438,7 +438,7 @@ static void APP_PROTO_FeedByte(APP_PROTO_Ctx *pCtx, uint16_t byte)
 
             /* 完整帧成功 调用hand */
             pCtx->cntOkFrames++;
-            APP_LOGI0(TAG, "SUCCESS\n");
+            // APP_LOGI0(TAG, "SUCCESS\n");
             if (pCtx->handler != (APP_PROTO_FrameHandler)0)
             {
                 

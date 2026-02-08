@@ -340,10 +340,6 @@ static void DRV_SPI0_RxHandleSession(uint16_t data)
         if (nextHead != s_spi0SessionRx.tail)
         {
             s_spi0SessionRx.buffer[s_spi0SessionRx.head] = data;
-
-
-            //TODO: 测试接口
-            APP_LOGI1D(TAG, "Receive data: 0x%02X", (uint16_t)(data & 0x00FFu));
             s_spi0SessionRx.head = nextHead;
         }
         s_spi0Session.rxExpect--;
@@ -694,9 +690,12 @@ __interrupt void INT_mySPI0_RX_ISR(void){
     } while (fifoStatus != SPI_FIFO_RXEMPTY);
 
     /* 命令与 dummy 发送完成后结束会话 */
-    if ((s_spi0Session.active != 0U) &&
-        (s_spi0Session.txRemaining == 0U) &&
-        (s_spi0Session.dummyRemaining == 0U))
+
+    if (s_spi0Session.active &&
+    s_spi0Session.txRemaining == 0U &&
+    s_spi0Session.dummyRemaining == 0U &&
+    s_spi0Session.rxIgnore == 0U &&
+    s_spi0Session.rxExpect == 0U)
     {
         s_spi0Session.active   = 0U;
         s_spi0Session.rxExpect = 0U;
