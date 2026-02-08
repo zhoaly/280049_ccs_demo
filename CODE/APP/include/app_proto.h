@@ -23,7 +23,7 @@ extern "C" {
 #define APP_PROTO_ROLE_SLAVE         (2u)
 
 #ifndef APP_PROTO_ROLE
-#define APP_PROTO_ROLE               (APP_PROTO_ROLE_MASTER)
+#define APP_PROTO_ROLE               (APP_PROTO_ROLE_SLAVE)
 #endif
 
 #if (APP_PROTO_ROLE != APP_PROTO_ROLE_MASTER) && (APP_PROTO_ROLE != APP_PROTO_ROLE_SLAVE)
