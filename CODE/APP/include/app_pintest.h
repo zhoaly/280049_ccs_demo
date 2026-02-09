@@ -89,38 +89,75 @@ extern "C" {
  */
 #ifndef APP_PINTEST_GPIO_POINT_LIST
 #define APP_PINTEST_GPIO_POINT_LIST \
+    X(0u,  GPIO_0_GPIO0) \
+    X(1u,  GPIO_1_GPIO1) \
+    X(4u,  GPIO_4_GPIO4) \
+    X(7u,  GPIO_7_GPIO7) \
     X(12u, GPIO_12_GPIO12) \
-    X(14u, GPIO_14_GPIO14) \
-    X(15u, GPIO_15_GPIO15) \
+    X(13u, GPIO_13_GPIO13) \
     X(18u, GPIO_18_GPIO18_X2) \
-    X(20u, GPIO_20_GPIO20) \
-    X(21u, GPIO_21_GPIO21) \
     X(22u, GPIO_22_GPIO22_VFBSW) \
+    X(23u, GPIO_23_GPIO23_VSW) \
     X(24u, GPIO_24_GPIO24) \
-    X(25u, GPIO_25_GPIO25) \
-    X(26u, GPIO_26_GPIO26) \
-    X(27u, GPIO_27_GPIO27) \
-    X(30u, GPIO_30_GPIO30) \
-    X(31u, GPIO_31_GPIO31)
+    X(28u, GPIO_28_GPIO28) \
+    X(29u, GPIO_29_GPIO29) \
+    X(32u, GPIO_32_GPIO32) \
+    X(33u, GPIO_33_GPIO33)
+    /*已占用引脚:
+        LED：GPIO6
+        从机就绪：GPIO5
+        SCI：GPIO16 / GPIO17 / GPIO2 / GPIO3
+        SPI：GPIO8 / GPIO9 / GPIO10 / GPIO11
+        JTAG: GPIO35/GPIO37
+    */
 #endif
 
-/* ----------------------------- ADC 测试点列表 ----------------------------- */
-/**
+/* ----------------------------- ADC 测试点列表 ----------------------------
  * @brief ADC 测试点（pin-to-pin）列表。
  *
- * 每个条目格式：
+ * 条目格式：
  *   X(gpioPin, gpioPinConfig, adcBase, adcResultBase, adcChannel)
  *
- * 示例：
- *   X(0u, GPIO_0_GPIO0, ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN0)
- *
  * 说明：
- * - 主机侧会将该引脚配置为模拟输入并采样 ADC；
- * - 从机侧仍以 GPIO 输出拉高/拉低；
- * - 若某 AD 引脚无法作为 GPIO 输出，则不适合该测试流程。
+ * - 这里按 ADCA（ADCA_BASE/ADCARESULT_BASE）给出外部可用通道；
+ * - gpioPin/gpioPinConfig 对于 AIO/AGPIO 使用 pin_map.h 中的 GPIO_<n>_GPIO<n>；
+ * - ADCIN13 在 64-Pin PM 上对应 VREFLOABC（参考低端），通常不作为外部采样通道使用。
  */
 #ifndef APP_PINTEST_ADC_POINT_LIST
-#define APP_PINTEST_ADC_POINT_LIST
+#define APP_PINTEST_ADC_POINT_LIST \
+    /* ADCINA0 : (A0/B15/C15/DACA_OUT)  -> AGPIO23, AIO231 */ \
+    X(23u,  GPIO_23_GPIO23,    ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN0)  \
+    /* ADCINA1 : (A1/B7/DACB_OUT)       -> AGPIO22, AIO232 */ \
+    X(22u,  GPIO_22_GPIO22,    ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN1)  \
+    /* ADCINA2 : (A2/B6/C9/PGA1_OF)     -> AIO224 */ \
+    X(224u, GPIO_224_GPIO224,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN2)  \
+    /* ADCINA3 : (A3/B3/C5/VDAC)        -> AIO242 */ \
+    X(242u, GPIO_242_GPIO242,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN3)  \
+    /* ADCINA4 : (A4/B8/C14/PGA2_OF)    -> AIO225 */ \
+    X(225u, GPIO_225_GPIO225,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN4)  \
+    /* ADCINA5 : (C2, A5/B12/C2)        -> AIO244*/  \
+    X(244u, GPIO_244_GPIO244,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN5)  \
+    /* 可选：ADCINA5 : (A5) -> AIO234（按硬件实际接线决定是否使用） */ \
+    X(234u, GPIO_234_GPIO234,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN5)  \
+    /* ADCINA6 : (A6/PGA5_OF)            -> AIO228 */ \
+    X(228u, GPIO_228_GPIO228,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN6)  \
+    /* ADCINA7 : (C3, A7/C3)             -> AIO245 */ \
+    X(245u, GPIO_245_GPIO245,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN7)  \
+    /* ADCINA8 : (PGA2_GND, A8/B0/C11)   -> AIO241 */ \
+    X(241u, GPIO_241_GPIO241,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN8)  \
+    /* ADCINA9 : (B4/C8/PGA4_OF)         -> AIO236 */ \
+    X(236u, GPIO_236_GPIO236,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN9)  \
+    /* ADCINA10: (A10/B1/C10/PGA7_OF)    -> AIO230 */ \
+    X(230u, GPIO_230_GPIO230,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN10) \
+    /* ADCINA11: (C0, A11/B10/C0)        -> AIO237 */ \
+    X(237u, GPIO_237_GPIO237,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN11) \
+    /* ADCINA12: (C1, A12/C1)            -> AIO238 */ \
+    X(238u, GPIO_238_GPIO238,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN12) \
+    /* ADCINA13: 64-Pin PM 上对应 VREFLOABC（参考低端），通常不列为外部采样 */ \
+    /* ADCINA14: (C4, A14/B14/C4)        -> AIO239 */ \
+    X(239u, GPIO_239_GPIO239,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN14) \
+    /* ADCINA15: (PGA1_GND, A15/B9/C7)   -> AIO233 */ \
+    X(233u, GPIO_233_GPIO233,  ADCA_BASE, ADCARESULT_BASE, ADC_CH_ADCIN15)
 #endif
 
 /* ----------------------------- ADC 采样参数 ----------------------------- */
