@@ -250,6 +250,8 @@ static void APP_PINTEST_InitOnce(void)
         return;
     }
 
+    ASysCtl_disableDCDC();//关闭22/23引脚的片上DCDC功能
+
     EALLOW;
 
     for (i = 0u; i < APP_PINTEST_POINT_COUNT; i++)
@@ -292,6 +294,25 @@ static void APP_PINTEST_InitOnce(void)
         GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_OUT);
 #endif
     }
+
+    /* Force GPIO22/23 to digital GPIO for PinTest. */
+    GPIO_setAnalogMode(22u, GPIO_ANALOG_DISABLED);
+    GPIO_setAnalogMode(23u, GPIO_ANALOG_DISABLED);
+#if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    GPIO_setPadConfig(22u, GPIO_PIN_TYPE_STD);
+    GPIO_setPadConfig(23u, GPIO_PIN_TYPE_STD);
+    GPIO_setQualificationMode(22u, GPIO_QUAL_SYNC);
+    GPIO_setQualificationMode(23u, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(22u, GPIO_DIR_MODE_IN);
+    GPIO_setDirectionMode(23u, GPIO_DIR_MODE_IN);
+#else
+    GPIO_setPadConfig(22u, GPIO_PIN_TYPE_STD);
+    GPIO_setPadConfig(23u, GPIO_PIN_TYPE_STD);
+    GPIO_setQualificationMode(22u, GPIO_QUAL_SYNC);
+    GPIO_setQualificationMode(23u, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(22u, GPIO_DIR_MODE_OUT);
+    GPIO_setDirectionMode(23u, GPIO_DIR_MODE_OUT);
+#endif
 
     EDIS;
 
@@ -389,7 +410,6 @@ uint16_t APP_PINTEST_OnProtoWrite(uint16_t channel,
 
     uint16_t gpioLevel = (level != 0u) ? 1u : 0u;
     GPIO_writePin(point->pinId, gpioLevel);
-    //TODO:debug
     APP_LOGI2D(TAG, "Slave set pin %u level %u\n", point->pinId, gpioLevel);
 
     return 1u;
@@ -414,12 +434,16 @@ void PINTEST_Task_Func(void *pvParameters)
     APP_PINTEST_InitOnce(); //初始化
 
 #if (APP_PROTO_ROLE == APP_PROTO_ROLE_MASTER)
+    uint32_t round = 0u;
+
     APP_LOGI0(TAG, "PinTest master task start\n");
 
     for (;;)
     {
         APP_PROTO_Ctx *ctx = APP_PROTO_GetChannelCtx(APP_PINTEST_CHANNEL);
         uint16_t i;
+        uint16_t failedPins[APP_PINTEST_POINT_COUNT];
+        uint16_t failedCount = 0u;
 
         if ((ctx == (APP_PROTO_Ctx *)0) || (ctx->initialized == 0u))
         {
@@ -442,12 +466,15 @@ void PINTEST_Task_Func(void *pvParameters)
             continue;
         }
 
+        round += 1u;
+
         for (i = 0u; i < APP_PINTEST_POINT_COUNT; i++)
         {
             const APP_PINTEST_Point *point = &s_pinTestPoints[i];
             uint16_t payload[APP_PINTEST_PAYLOAD_LEN];
             SemaphoreHandle_t ackSem = (APP_PINTEST_CHANNEL == APP_PROTO_CH0) ?
                                        PROTO_ACK_CH0Handle : PROTO_ACK_CH1Handle;
+            uint16_t pointFailed = 0u;
 
             /* 步骤1：清空可能残留的 ACK 信号，避免将旧 ACK 误认为本次响应 */
             if (ackSem != NULL)
@@ -466,6 +493,11 @@ void PINTEST_Task_Func(void *pvParameters)
             if (APP_PROTO_SendWrite(ctx, payload, (uint16_t)APP_PINTEST_PAYLOAD_LEN) == 0u)
             {
                 APP_LOGE1D(TAG, "PinTest send fail pin %u\n", point->pinId);
+                if (failedCount < APP_PINTEST_POINT_COUNT)
+                {
+                    failedPins[failedCount] = point->pinId;
+                    failedCount++;
+                }
                 continue;
             }
 
@@ -489,6 +521,7 @@ void PINTEST_Task_Func(void *pvParameters)
                     else
                     {
                         APP_LOGE2D(TAG, "ADC pin %u val %u FAIL\n", point->pinId, adcValue);
+                        pointFailed = 1u;
                     }
                 }
                 else
@@ -502,12 +535,23 @@ void PINTEST_Task_Func(void *pvParameters)
                     else
                     {
                         APP_LOGE2D(TAG, "GPIO pin %u level %u FAIL\n", point->pinId, level);
+                        pointFailed = 1u;
                     }
                 }
             }
             else
             {
                 APP_LOGE1D(TAG, "PinTest ACK timeout pin %u\n", point->pinId);
+                pointFailed = 1u;
+            }
+
+            if (pointFailed != 0u)//记录
+            {
+                if (failedCount < APP_PINTEST_POINT_COUNT)
+                {
+                    failedPins[failedCount] = point->pinId;
+                    failedCount++;
+                }
             }
 
 #if (APP_PINTEST_RESET_AFTER != 0u)
@@ -529,6 +573,20 @@ void PINTEST_Task_Func(void *pvParameters)
                 (void)xSemaphoreTake(ackSem, pdMS_TO_TICKS(APP_PINTEST_ACK_TIMEOUT_MS));
             }
 #endif
+        }
+
+        if (failedCount == 0u)
+        {
+            APP_LOGI1D(TAG, "PinTest round %u PASS\n", (uint32_t)round);
+        }
+        else
+        {
+            APP_LOGW2D(TAG, "PinTest round %u FAIL count %u\n", (uint32_t)round, (uint32_t)failedCount);
+            for (i = 0u; i < failedCount; i++)
+            {
+                APP_LOGW2D(TAG, "PinTest round %u fail pin %u\n", (uint32_t)round, failedPins[i]);
+                vTaskDelay(pdMS_TO_TICKS(10));
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(APP_PINTEST_PERIOD_MS));

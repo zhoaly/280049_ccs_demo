@@ -50,7 +50,7 @@ extern "C" {
  * @brief 每轮扫描全部测试点后的周期延时（ms）。
  */
 #ifndef APP_PINTEST_PERIOD_MS
-#define APP_PINTEST_PERIOD_MS 1000u
+#define APP_PINTEST_PERIOD_MS 10000u
 #endif
 
 /**
@@ -95,7 +95,6 @@ extern "C" {
     X(7u,  GPIO_7_GPIO7) \
     X(12u, GPIO_12_GPIO12) \
     X(13u, GPIO_13_GPIO13) \
-    X(18u, GPIO_18_GPIO18_X2) \
     X(22u, GPIO_22_GPIO22_VFBSW) \
     X(23u, GPIO_23_GPIO23_VSW) \
     X(24u, GPIO_24_GPIO24) \
@@ -109,10 +108,13 @@ extern "C" {
         SCI：GPIO16 / GPIO17 / GPIO2 / GPIO3
         SPI：GPIO8 / GPIO9 / GPIO10 / GPIO11
         JTAG: GPIO35/GPIO37
+        X2: GPIO18
+        
     */
 #endif
 
-/* ----------------------------- ADC 测试点列表 ----------------------------
+/* ----------------------------- ADC 测试点列表 ----------------------------- */
+/*
  * @brief ADC 测试点（pin-to-pin）列表。
  *
  * 条目格式：
