@@ -85,6 +85,31 @@ static uint16_t APP_PINTEST_IsAnalogPin(uint16_t pinId)
     return 0u;
 }
 
+static uint16_t APP_PINTEST_IsAioPin(uint16_t pinId)
+{
+    if ((pinId >= 224u) && (pinId <= 247u))
+    {
+        return 1u;
+    }
+    return 0u;
+}
+
+static void APP_PINTEST_ConfigAioPullup(uint16_t pinId)
+{
+    GPIO_setAnalogMode(pinId, GPIO_ANALOG_DISABLED);
+    GPIO_setPadConfig(pinId, GPIO_PIN_TYPE_PULLUP);
+    GPIO_setQualificationMode(pinId, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(pinId, GPIO_DIR_MODE_IN);
+}
+
+static void APP_PINTEST_ConfigAioFloat(uint16_t pinId)
+{
+    GPIO_setAnalogMode(pinId, GPIO_ANALOG_DISABLED);
+    GPIO_setPadConfig(pinId, GPIO_PIN_TYPE_STD);
+    GPIO_setQualificationMode(pinId, GPIO_QUAL_SYNC);
+    GPIO_setDirectionMode(pinId, GPIO_DIR_MODE_IN);
+}
+
 /**
  * @brief 根据 pinId 查找测试点。
  * @return 找到返回指针，否则返回 NULL。
@@ -285,13 +310,20 @@ static void APP_PINTEST_InitOnce(void)
             GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_IN);
         }
 #else
-        if (APP_PINTEST_IsAnalogPin(point->pinId) != 0u)
+        if (APP_PINTEST_IsAioPin(point->pinId) != 0u)
         {
-            GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+            APP_PINTEST_ConfigAioPullup(point->pinId);
         }
-        GPIO_setPadConfig(point->pinId, GPIO_PIN_TYPE_STD);
-        GPIO_setQualificationMode(point->pinId, GPIO_QUAL_SYNC);
-        GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_OUT);
+        else
+        {
+            if (APP_PINTEST_IsAnalogPin(point->pinId) != 0u)
+            {
+                GPIO_setAnalogMode(point->pinId, GPIO_ANALOG_DISABLED);
+            }
+            GPIO_setPadConfig(point->pinId, GPIO_PIN_TYPE_STD);
+            GPIO_setQualificationMode(point->pinId, GPIO_QUAL_SYNC);
+            GPIO_setDirectionMode(point->pinId, GPIO_DIR_MODE_OUT);
+        }
 #endif
     }
 
@@ -320,7 +352,10 @@ static void APP_PINTEST_InitOnce(void)
     /* 从机侧全部拉低，避免上电误触发。 */
     for (i = 0u; i < APP_PINTEST_POINT_COUNT; i++)
     {
-        GPIO_writePin(s_pinTestPoints[i].pinId, 0u);
+        if (APP_PINTEST_IsAioPin(s_pinTestPoints[i].pinId) == 0u)
+        {
+            GPIO_writePin(s_pinTestPoints[i].pinId, 0u);
+        }
     }
 #endif
 
@@ -406,6 +441,20 @@ uint16_t APP_PINTEST_OnProtoWrite(uint16_t channel,
     {
         APP_LOGW1D(TAG, "PinTest unknown pin %u\n", pinId);
         return 0u;
+    }
+
+    if (APP_PINTEST_IsAioPin(point->pinId) != 0u)
+    {
+        if (level != 0u)
+        {
+            APP_PINTEST_ConfigAioPullup(point->pinId);
+        }
+        else
+        {
+            APP_PINTEST_ConfigAioFloat(point->pinId);
+        }
+        APP_LOGI2D(TAG, "Slave AIO pin %u level %u\n", point->pinId, (uint16_t)(level != 0u));
+        return 1u;
     }
 
     uint16_t gpioLevel = (level != 0u) ? 1u : 0u;
